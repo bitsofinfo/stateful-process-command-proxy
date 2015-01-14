@@ -23,7 +23,7 @@
     "dependencies":{
         "buffer-builder":"latest",
         "fifo":"latest",
-        "promise":"latest",
+        "promisejs":"latest",
         "generic-pool":"latest"
     },
     "devDependencies":{
