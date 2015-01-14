@@ -65,7 +65,7 @@ function ProcessProxy(processToSpawn, arguments,
                       cwd, envMap, uid, gid) {
 
     this._createdAt = new Date();
-    this._processPid = 0;
+    this._processPid = null;
     this._processToSpawn = processToSpawn;
     this._processArguments = arguments;
 
