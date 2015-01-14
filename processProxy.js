@@ -8,6 +8,27 @@ var Promise = require('promise');
 var MARKER_DONE = '__done__';
 
 
+// pending https://github.com/mafintosh/fifo/issues/2
+fifo.prototype.toArray = function () {
+    var list = [];
+
+    var n = this.node;
+    var start = n;
+
+    while(n != null) {
+        list.push(n.value);
+
+        if (n === start) {
+            n = null;
+        } else {
+            n = n.next;
+        }
+    }
+
+    return list;
+}
+
+
 /**
 * ProcessProxy constructor
 *
@@ -43,22 +64,26 @@ function ProcessProxy(processToSpawn, arguments,
                       retainMaxCmdHistory, invalidateOnRegex,
                       cwd, envMap, uid, gid) {
 
+    this._createdAt = new Date();
     this._processToSpawn = processToSpawn;
     this._processArguments = arguments;
 
 
+    this._commandHistory = [];
     if(typeof(retainMaxCmdHistory)==='undefined') {
         this._retainMaxCmdHistory = 0;
+
     } else {
         this._retainMaxCmdHistory = retainMaxCmdHistory;
     }
 
+
+    this._regexesMap = new Object();
     if(typeof(invalidateOnRegex)==='undefined') {
-        this._regexesMap = new Object();
+        // nothing to do...
 
     } else {
 
-        this._regexesMap = new Object();
         this._invalidateOnRegexConfig = invalidateOnRegex;
 
         // build the _regexesMap from the config
@@ -104,6 +129,8 @@ function ProcessProxy(processToSpawn, arguments,
     }
 
     this._commandStack = new fifo();
+
+    this._commandStack.toArray();
 };
 
 ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendTo) {
@@ -139,6 +166,16 @@ ProcessProxy.prototype.isValid = function() {
 **/
 ProcessProxy.prototype._handleCommandFinished = function(command) {
     if (command && command.isCompleted()) {
+
+        // store command history...
+        if (this._retainMaxCmdHistory > 0) {
+            this._commandHistory.push(command); // append the latest one
+
+            if (this._commandHistory.length >= this._retainMaxCmdHistory) {
+                this._commandHistory.shift(); // get rid of the oldest one
+            }
+        }
+
 
         // not configured for regexe invalidation
         if(Object.keys(this._regexesMap).length == 0) {
@@ -433,21 +470,20 @@ ProcessProxy.prototype.executeCommands = function(commands) {
 
                         }));
 
-                        // write the command, followed by this echo
-                        // marker so we know that the command is done
-                        self._process.stdin.write(command + '\n' +
-                        'echo ' + MARKER_DONE + '\n');
+                // write the command, followed by this echo
+                // marker so we know that the command is done
+                self._process.stdin.write(command + '\n' +
+                'echo ' + MARKER_DONE + '\n');
 
-
-                    }
-
-                } catch (e) {
-                    reject(e);
                 }
 
-            });
+            } catch (e) {
+                reject(e);
+            }
 
-        };
+        });
+
+    };
 
         /**
         * shutdown() - shuts down the ProcessProxy w/ optional shutdown commands
@@ -509,15 +545,52 @@ ProcessProxy.prototype.executeCommands = function(commands) {
         };
 
 
-ProcessProxy.prototype.getStatus = new function() {
+/**
+* Returns a status structure of this ProcessProxy
+* at the point in time this method is invovked
+*
+**/
+ProcessProxy.prototype.getStatus = function() {
 
     var status = {
+        'statusTime':new Date().toISOString(),
         'process':this._processToSpawn,
         'arguments':this._processArguments,
-        'options':this._processOptions
+        'options':this._processOptions,
+        'isValid':this._isValid,
+        'createdAt':(this._createdAt ? this._createdAt.toISOString() : null),
+        'invalidateOnRegexConfig':this._invalidateOnRegexConfig,
+        'activeCommandStack':[],
+        'commandHistory':[]
     };
 
-    status['commandHistory']
+    var commandStackArray = this._commandStack.toArray();
+    for (var i=0; i<commandStackArray.length; i++) {
+        var cmd  = commandStackArray[i];
+        status['activeCommandStack'].push({
+            'command':cmd.getCommand(),
+            'startedAt':cmd.getStartedAt().toISOString(),
+            'receivedData':cmd.receivedData(),
+            'finishedAt':(cmd.getFinishedAt() ? cmd.getFinishedAt().toISOString() : null),
+            'stdout':cmd.getStdout(),
+            'stderr':cmd.getStderr()
+        });
+    }
+
+    for (var i=0; i<this._commandHistory.length; i++) {
+        var cmd  = this._commandHistory[i];
+        status['commandHistory'].push({
+                        'command':cmd.getCommand(),
+                        'startedAt':cmd.getStartedAt().toISOString(),
+                        'receivedData':cmd.receivedData(),
+                        'finishedAt':(cmd.getFinishedAt() ? cmd.getFinishedAt().toISOString() : null),
+                        'stdout':cmd.getStdout(),
+                        'stderr':cmd.getStderr()
+                    });
+    }
+
+    return status;
+
 
 
 }

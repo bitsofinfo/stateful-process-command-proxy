@@ -99,6 +99,7 @@ function StatefulProcessCommandProxy(config) {
 
 }
 
+
 StatefulProcessCommandProxy.prototype.shutdown = function() {
     var self = this;
     return new Promise(function(fulfill, reject) {

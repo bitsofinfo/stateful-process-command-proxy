@@ -15,6 +15,8 @@ function Command(command, callback) {
     this._stderr = null;
     this._receivedData = false;
     this._completed = false;
+    this._startedAt = new Date();
+    this._finishedAt = null;
 }
 
 Command.prototype.getCommand = function() {
@@ -50,11 +52,21 @@ Command.prototype.finish = function() {
 
     // done!
     this._completed = true;
+    this._finishedAt = new Date();
 
     // invoke the callback
     if (this._callback) {
         this._callback(this._command, this._stdout, this._stderr);
     }
+}
+
+
+Command.prototype.getStartedAt = function() {
+    return this._startedAt;
+}
+
+Command.prototype.getFinishedAt = function() {
+    return this._finishedAt;
 }
 
 Command.prototype.getStdout = function() {
