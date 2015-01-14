@@ -9,6 +9,8 @@ var MARKER_DONE = '__done__';
 
 
 // pending https://github.com/mafintosh/fifo/issues/2
+// Added in fifo 2.0
+/*
 fifo.prototype.toArray = function () {
     var list = [];
 
@@ -26,7 +28,7 @@ fifo.prototype.toArray = function () {
     }
 
     return list;
-}
+}*/
 
 
 /**
@@ -481,6 +483,7 @@ ProcessProxy.prototype.executeCommands = function(commands) {
                 // marker so we know that the command is done
                 self._process.stdin.write(command + '\n' +
                 'echo ' + MARKER_DONE + '\n');
+
 
             }
 
