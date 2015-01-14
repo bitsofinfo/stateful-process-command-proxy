@@ -120,13 +120,7 @@ describe('test stateful-process-command-proxy', function() {
             }
 
             // collect status
-            statefulProcessCommandProxy.getStatus()
-                .then(function(statuses) {
-                    console.log(JSON.stringify(statuses,null,2));
-                }).catch(function(error) {
-                    console.log(error);
-                    assert(false);
-                });
+            console.log(JSON.stringify(statefulProcessCommandProxy.getStatus(),null,2));
 
             // shut it all down
             statefulProcessCommandProxy.shutdown()

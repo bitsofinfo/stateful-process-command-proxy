@@ -9,6 +9,11 @@ function StatefulProcessCommandProxy(config) {
 
     this._poolConfig = config;
 
+    // map of all process PIDs -> ProcessProxies
+    this._pid2processMap = new Object();
+
+    var self = this;
+
     this._pool = poolModule.Pool({
 
         name: config.name,
@@ -33,6 +38,7 @@ function StatefulProcessCommandProxy(config) {
 
                 .then(function(cmdResults) {
                     console.log("ProcessProxy ready, initialization commands completed.");
+                    self._pid2processMap[processProxy.getPid()] = processProxy; // register in our process map
                     callback(null, processProxy);
 
                 }).catch(function(exception) {
@@ -61,12 +67,15 @@ function StatefulProcessCommandProxy(config) {
 
                 .then(function(cmdResults) {
 
+                    // remove from our tracking...
+                    delete self._pid2processMap[processProxy.getPid()];
+
                     if (cmdResults) {
                         for (var cmd in cmdResults) {
                             var cmdResult = cmdResults[cmd];
                             console.log("StatefulProcessCommandProxy.preDestroyCmd[" +
                             cmdResult.command + "] out:" + cmdResult.stdout +
-                            " err:" + cmdResult.stderr);
+                                " err:" + cmdResult.stderr);
                         }
                     }
 
@@ -105,58 +114,24 @@ function StatefulProcessCommandProxy(config) {
 
 StatefulProcessCommandProxy.prototype.getStatus = function() {
 
-    var self = this;
+    var processPids = Object.keys(this._pid2processMap);
+    var statuses = [];
 
-    return new Promise(function(fulfill,reject) {
-        var collected = 0;
-        var poolSize = self._pool.getPoolSize();
-        var statuses = [];
+    // iterate through known pids...
+    // @see aquire/destroy hooks in pool config above
+    for (var i=0; i < processPids.length; i++) {
+        var processProxy = this._pid2processMap[processPids[i]];
 
-        // iterate through entire pool
-        for (var i=0; i<poolSize; i++) {
+        try {
+            statuses.push(processProxy.getStatus());
 
-            try {
-                // aquire proxy
-                self._pool.acquire(function(error, processProxy) {
-
-                    if (error) {
-                        console.log("StatefulProcessCommandProxy.getStatus[" +
-                        command + "]: error in acquire: " + error);
-
-                    } else {
-                        // we have the ProcessProxy, set a timeout to
-                        // fetch its status in 2s, which lets it be checked
-                        // out long enought that the next iteration won't
-                        // end up aquiring the same object...
-                         setTimeout(function() {
-
-                             try {
-                                 statuses.push(processProxy.getStatus());
-                                 collected++
-                                 if (collected == poolSize) {
-                                     fulfill(statuses); // we are done.
-                                 }
-                             } catch (e) {
-                                 console.log("StatefulProcessCommandProxy.getStatus[" +
-                                    command + "]: error: " + e);
-                                 reject(e);
-
-                             } finally {
-                                 self._pool.release(processProxy);
-                             }
-
-                         },2500);
-
-                    }
-                });
-            } catch(exception) {
-                console.log("StatefulProcessCommandProxy.getStatus[" +
-                    command + "]: error in aquiring: " + e);
-                reject(e);
-            }
+        } catch(exception) {
+            console.log("StatefulProcessCommandProxy.getStatus[process:" +
+                processProxy.getPid() + "]: error: " + e);
         }
+    }
 
-    });
+    return statuses;
 }
 
 StatefulProcessCommandProxy.prototype.shutdown = function() {

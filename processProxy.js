@@ -65,6 +65,7 @@ function ProcessProxy(processToSpawn, arguments,
                       cwd, envMap, uid, gid) {
 
     this._createdAt = new Date();
+    this._processPid = 0;
     this._processToSpawn = processToSpawn;
     this._processArguments = arguments;
 
@@ -132,6 +133,10 @@ function ProcessProxy(processToSpawn, arguments,
 
     this._commandStack.toArray();
 };
+
+ProcessProxy.prototype.getPid = function() {
+    return this._processPid;
+}
 
 ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendTo) {
     if (regexesToParse && regexesToParse.length > 0) {
@@ -341,6 +346,8 @@ ProcessProxy.prototype.initialize = function(initCommands) {
             console.log("Process: " + self._processToSpawn +
                 " PID: " + self._process.pid);
 
+            self._processPid = self._process.pid;
+
             // register stdout stream handler
             self._process.stdout.on('data', function(data) {
                 self.onData('stdout', data);
@@ -475,74 +482,74 @@ ProcessProxy.prototype.executeCommands = function(commands) {
                 self._process.stdin.write(command + '\n' +
                 'echo ' + MARKER_DONE + '\n');
 
-                }
-
-            } catch (e) {
-                reject(e);
             }
 
-        });
+        } catch (e) {
+            reject(e);
+        }
 
-    };
+    });
 
-        /**
-        * shutdown() - shuts down the ProcessProxy w/ optional shutdown commands
-        *              and returns a Promise, when fulfilled contains the results
-        *              of the shutdown commands or on reject the exception. No
-        *              matter what, (success or fail of shutdown commands), the actual
-        *              underlying child process being proxied WILL be KILLED.
-        *
-        * shutdownCommands - optional array of commands to execute before the process
-        *                is attempted to be shutdown.
-        **/
-        ProcessProxy.prototype.shutdown = function(shutdownCommands) {
+};
 
-            console.log(this._processToSpawn + " pid["+this._process.pid+"] is shutting down...");
+/**
+* shutdown() - shuts down the ProcessProxy w/ optional shutdown commands
+*              and returns a Promise, when fulfilled contains the results
+*              of the shutdown commands or on reject the exception. No
+*              matter what, (success or fail of shutdown commands), the actual
+*              underlying child process being proxied WILL be KILLED.
+*
+* shutdownCommands - optional array of commands to execute before the process
+*                is attempted to be shutdown.
+**/
+ProcessProxy.prototype.shutdown = function(shutdownCommands) {
 
-            var self = this;
+    console.log(this._processToSpawn + " pid["+this._process.pid+"] is shutting down...");
 
-            return new Promise(function(fulfill, reject) {
+    var self = this;
 
-                try {
-                    // run all shutdownCommands if provided
-                    if (shutdownCommands) {
+    return new Promise(function(fulfill, reject) {
 
-                        self.executeCommands(shutdownCommands)
+        try {
+            // run all shutdownCommands if provided
+            if (shutdownCommands) {
 
-                        .then(function(cmdResults) {
+                self.executeCommands(shutdownCommands)
 
-                            self._process.stdin.end();
-                            self._process.kill();
+                .then(function(cmdResults) {
 
-                            fulfill(cmdResults); // invoke when done!
+                    self._process.stdin.end();
+                    self._process.kill();
 
-                        }).catch(function(exception) {
-                            console.log("shutdown - shutdownCommands, " +
-                            " exception thrown: " + exception);
-                            self._process.stdin.end();
-                            self._process.kill();
-                            reject(exception);
-                        });
+                    fulfill(cmdResults); // invoke when done!
 
-
-                        // we are done, no init commands to run...
-                    } else {
-                        self._process.stdin.end();
-                        self._process.kill();
-                        fulfill(null);
-                    }
-
-
-                } catch (exception) {
-                    console.log("shutdown, exception thrown: " + exception);
+                }).catch(function(exception) {
+                    console.log("shutdown - shutdownCommands, " +
+                    " exception thrown: " + exception);
                     self._process.stdin.end();
                     self._process.kill();
                     reject(exception);
-                }
-            });
+                });
 
 
-        };
+                // we are done, no init commands to run...
+            } else {
+                self._process.stdin.end();
+                self._process.kill();
+                fulfill(null);
+            }
+
+
+        } catch (exception) {
+            console.log("shutdown, exception thrown: " + exception);
+            self._process.stdin.end();
+            self._process.kill();
+            reject(exception);
+        }
+    });
+
+
+};
 
 
 /**
@@ -554,6 +561,7 @@ ProcessProxy.prototype.getStatus = function() {
 
     var status = {
         'statusTime':new Date().toISOString(),
+        'pid':this._process.pid,
         'process':this._processToSpawn,
         'arguments':this._processArguments,
         'options':this._processOptions,
