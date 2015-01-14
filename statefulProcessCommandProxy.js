@@ -110,7 +110,7 @@ function StatefulProcessCommandProxy(config) {
         // - log string
         // - log level ('verbose', 'info', 'warn', 'error')
         log: function(msg,level) {
-            self._log(level,msg);
+            self._log2(level,'Pool',msg);
         }
     });
 
@@ -119,11 +119,16 @@ function StatefulProcessCommandProxy(config) {
 }
 
 StatefulProcessCommandProxy.prototype._log = function(severity,msg) {
+    this._log2(severity,this.__proto__.constructor.name,msg);
+}
+
+
+StatefulProcessCommandProxy.prototype._log2 = function(severity,origin,msg) {
     if (this._logFunction) {
-        this._logFunction(severity,"StatefulProcessCommandProxy " + msg);
+        this._logFunction(severity,origin,msg);
 
     } else {
-        console.log(severity.toUpperCase() + " StatefulProcessCommandProxy " + msg);
+        console.log(severity.toUpperCase() + " " + origin + " " + msg);
     }
 }
 

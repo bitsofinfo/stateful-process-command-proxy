@@ -137,12 +137,17 @@ function ProcessProxy(processToSpawn, arguments,
     this._commandStack.toArray();
 };
 
+
 ProcessProxy.prototype._log = function(severity,msg) {
+    this._log2(severity,this.__proto__.constructor.name+"["+this._processPid+"]",msg);
+}
+
+ProcessProxy.prototype._log2 = function(severity,origin,msg) {
     if (this._logFunction) {
-        this._logFunction(severity,"ProcessProxy["+this._processPid+"] " + msg);
+        this._logFunction(severity,origin,msg);
 
     } else {
-        console.log(severity.toUpperCase() + " ProcessProxy["+this._processPid+"] " + msg);
+        console.log(severity.toUpperCase() + " " +origin+ " " + msg);
     }
 }
 
