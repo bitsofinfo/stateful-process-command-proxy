@@ -30,7 +30,7 @@ describe('test stateful-process-command-proxy', function() {
                                 'echo $test1' : function(cmdResult) { assert.equal('testvar',cmdResult.stdout.trim()); },
 
                                 // note this one validates the processEnvMap value set @ StatefulProcessCommandProxy
-                                'echo $testenvvar' : function(cmdResult) { assert.equal('value1',cmdResult.stdout.trim()); }
+                                'echo $Env:testenvvar' : function(cmdResult) { assert.equal('value1',cmdResult.stdout.trim()); }
                             }
 
                         }
@@ -71,7 +71,9 @@ describe('test stateful-process-command-proxy', function() {
                 max: 1,
                 min: 1,
                 idleTimeoutMillis: 10000,
-                log: false,
+                log: function(severity,msg) {
+                    console.log(severity.toUpperCase() + " " + msg);
+                },
 
                 processCommand: config.processCommand,
                 processArgs:    config.processArgs,

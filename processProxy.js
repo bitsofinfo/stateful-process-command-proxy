@@ -64,12 +64,13 @@ fifo.prototype.toArray = function () {
 */
 function ProcessProxy(processToSpawn, arguments,
                       retainMaxCmdHistory, invalidateOnRegex,
-                      cwd, envMap, uid, gid) {
+                      cwd, envMap, uid, gid, logFunction) {
 
     this._createdAt = new Date();
     this._processPid = null;
     this._processToSpawn = processToSpawn;
     this._processArguments = arguments;
+    this._logFunction = logFunction;
 
 
     this._commandHistory = [];
@@ -136,6 +137,15 @@ function ProcessProxy(processToSpawn, arguments,
     this._commandStack.toArray();
 };
 
+ProcessProxy.prototype._log = function(severity,msg) {
+    if (this._logFunction) {
+        this._logFunction(severity,"ProcessProxy["+this._processPid+"] " + msg);
+
+    } else {
+        console.log(severity.toUpperCase() + " ProcessProxy["+this._processPid+"] " + msg);
+    }
+}
+
 ProcessProxy.prototype.getPid = function() {
     return this._processPid;
 }
@@ -154,7 +164,7 @@ ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendT
                 }
 
             } catch(exception) {
-                console.log("Error parsing invalidation regex: "
+                this._log('error',"Error parsing invalidation regex: "
                     + regexStr + " err:"+exception);
             }
         }
@@ -204,7 +214,7 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
 
                 if (result) {
                     this._isValid = false;
-                    console.log("ProcessProxy: stderr matches invalidation regex: "
+                    this._log('error',"ProcessProxy: stderr matches invalidation regex: "
                         + regexp.toString() + " stderr: " + stderr);
                     return; // exit!
                 }
@@ -220,7 +230,7 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
 
                 if (result) {
                     this._isValid = false;
-                    console.log("ProcessProxy: stdout matches invalidation regex: "
+                    this._log('error',"ProcessProxy: stdout matches invalidation regex: "
                         + regexp.toString() + " stdout: " + stdout);
                     return; // exit!
                 }
@@ -343,9 +353,9 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
         try {
             // spawn
-            console.log("Spawning process: " + self._processToSpawn);
+            self._log('info',"Spawning process: " + self._processToSpawn);
             self._process = spawn(self._processToSpawn, self._processArguments, self._processOptions);
-            console.log("Process: " + self._processToSpawn +
+            self._log('info',"Process: " + self._processToSpawn +
                 " PID: " + self._process.pid);
 
             self._processPid = self._process.pid;
@@ -362,17 +372,17 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
             // register close handler
             self._process.on('close', function(code,signal) {
-                console.log('child process received close; code:' + code + ' signal:'+signal);
+                self._log('info','child process received close; code:' + code + ' signal:'+signal);
             });
 
             // register error handler
             self._process.on('error', function(err) {
-                console.log('child process received error ' + err);
+                self._log('error','child process received error ' + err);
             });
 
             // register exit handler
             self._process.on('exit', function(code, signal) {
-                console.log('child process received exit; code:' + code + ' signal:'+signal);
+                self._log('info','child process received exit; code:' + code + ' signal:'+signal);
             });
 
 
@@ -385,7 +395,7 @@ ProcessProxy.prototype.initialize = function(initCommands) {
                     fulfill(cmdResults); // invoke when done!
 
                 }).catch(function(exception) {
-                    console.log("initialize - initCommands, " +
+                    self._log('error',"initialize - initCommands, " +
                     "exception thrown: " + exception);
                     reject(exception);
                 });
@@ -398,7 +408,7 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
 
         } catch (exception) {
-            console.log("initialize, exception thrown: " + exception);
+            self._log('error',"initialize, exception thrown: " + exception);
             reject(exception);
         }
 
@@ -507,7 +517,7 @@ ProcessProxy.prototype.executeCommands = function(commands) {
 **/
 ProcessProxy.prototype.shutdown = function(shutdownCommands) {
 
-    console.log(this._processToSpawn + " pid["+this._process.pid+"] is shutting down...");
+    this._log('info',this._processToSpawn + " pid["+this._process.pid+"] is shutting down...");
 
     var self = this;
 
@@ -527,7 +537,7 @@ ProcessProxy.prototype.shutdown = function(shutdownCommands) {
                     fulfill(cmdResults); // invoke when done!
 
                 }).catch(function(exception) {
-                    console.log("shutdown - shutdownCommands, " +
+                    self._log('error',"shutdown - shutdownCommands, " +
                     " exception thrown: " + exception);
                     self._process.stdin.end();
                     self._process.kill();
@@ -544,7 +554,7 @@ ProcessProxy.prototype.shutdown = function(shutdownCommands) {
 
 
         } catch (exception) {
-            console.log("shutdown, exception thrown: " + exception);
+            self._log('error',"shutdown, exception thrown: " + exception);
             self._process.stdin.end();
             self._process.kill();
             reject(exception);

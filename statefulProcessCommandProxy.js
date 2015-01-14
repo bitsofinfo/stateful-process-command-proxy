@@ -9,6 +9,8 @@ function StatefulProcessCommandProxy(config) {
 
     this._poolConfig = config;
 
+    this._logFunction = config.logFunction;
+
     // map of all process PIDs -> ProcessProxies
     this._pid2processMap = new Object();
 
@@ -22,7 +24,7 @@ function StatefulProcessCommandProxy(config) {
             var processProxy = null;
 
             try {
-                console.log("StatefulProcessCommandProxy - create: " + config.processCommand);
+                self._log('info',"create new process: " + config.processCommand);
                 processProxy = new ProcessProxy(config.processCommand,
                                                 config.processArgs,
                                                 config.processRetainMaxCmdHistory,
@@ -30,23 +32,24 @@ function StatefulProcessCommandProxy(config) {
                                                 config.processCwd,
                                                 config.processEnvMap,
                                                 config.processUid,
-                                                config.processGid);
+                                                config.processGid,
+                                                config.logFunction);
 
 
                 // initialize
                 processProxy.initialize(config.initCommands)
 
                 .then(function(cmdResults) {
-                    console.log("ProcessProxy ready, initialization commands completed.");
+                    self._log('info',"new process ready, initialization commands completed.");
                     self._pid2processMap[processProxy.getPid()] = processProxy; // register in our process map
                     callback(null, processProxy);
 
                 }).catch(function(exception) {
-                    console.log("ProcessProxy initialize threw error: " + exception);
+                    self._log('error',"new process initialize threw error: " + exception);
                 });
 
             } catch (exception) {
-                console.log("ProcesProxyPool.create: exception: " + exception);
+                self._log('error',"create: exception: " + exception);
                 callback(exception, null);
             }
         },
@@ -73,21 +76,21 @@ function StatefulProcessCommandProxy(config) {
                     if (cmdResults) {
                         for (var cmd in cmdResults) {
                             var cmdResult = cmdResults[cmd];
-                            console.log("StatefulProcessCommandProxy.preDestroyCmd[" +
+                            self._log('info',"process preDestroyCmd[" +
                             cmdResult.command + "] out:" + cmdResult.stdout +
                                 " err:" + cmdResult.stderr);
                         }
                     }
 
                 }).catch(function(error) {
-                    console.log("StatefulProcessCommandProxy.destroy, error " +
-                    "while shutting down ProcessProxy: " + error);
+                    self._log('error',"process destroy, error " +
+                        "while shutting down ProcessProxy["+processProxy.getPid()+"]: " + error);
 
                 });
 
             } catch (e) {
-                console.log("StatefulProcessCommandProxy.destroy: preDestroyCommands[" +
-                config.preDestroyCommands + "]exception: " + e);
+                self._log('error',"process destroy: preDestroyCommands[" +
+                    config.preDestroyCommands + "] exception: " + e);
             }
 
         },
@@ -103,14 +106,27 @@ function StatefulProcessCommandProxy(config) {
         // stay idle in pool before being removed
         idleTimeoutMillis: config.idleTimeoutMS,
 
-        // if true, logs via
-        // console.log - can also be a function
-        log: config.log
+        // logFunction it will be called with two parameters:
+        // - log string
+        // - log level ('verbose', 'info', 'warn', 'error')
+        log: function(msg,level) {
+            self._log(level,msg);
+        }
     });
 
 
 
 }
+
+StatefulProcessCommandProxy.prototype._log = function(severity,msg) {
+    if (this._logFunction) {
+        this._logFunction(severity,"StatefulProcessCommandProxy " + msg);
+
+    } else {
+        console.log(severity.toUpperCase() + " StatefulProcessCommandProxy " + msg);
+    }
+}
+
 
 StatefulProcessCommandProxy.prototype.getStatus = function() {
 
@@ -126,7 +142,7 @@ StatefulProcessCommandProxy.prototype.getStatus = function() {
             statuses.push(processProxy.getStatus());
 
         } catch(exception) {
-            console.log("StatefulProcessCommandProxy.getStatus[process:" +
+            self._log('error', "getStatus[process:" +
                 processProxy.getPid() + "]: error: " + e);
         }
     }
@@ -138,7 +154,7 @@ StatefulProcessCommandProxy.prototype.shutdown = function() {
     var self = this;
     return new Promise(function(fulfill, reject) {
         self._pool.drain(function() {
-            console.log("StatefulProcessCommandProxy is shutting down all" +
+            self._log('info',"shutting down all" +
                 " pooled ProcessProxies...");
             self._pool.destroyAllNow();
             fulfill();
@@ -161,8 +177,8 @@ StatefulProcessCommandProxy.prototype.executeCommand = function(command) {
         self._pool.acquire(function(error, processProxy) {
 
             if (error) {
-                console.log("StatefulProcessCommandProxy.executeCommand[" +
-                command + "]: error in acquire: " + error);
+                self._log('error', "executeCommand[" +
+                    command + "]: error in acquire: " + error);
 
             } else {
 
@@ -179,15 +195,15 @@ StatefulProcessCommandProxy.prototype.executeCommand = function(command) {
                         }
 
                     }).catch(function(error) {
-                        console.log("pool executeCommand: [" +
-                        command + "] error: " + e);
+                        self._log('error',"executeCommand: [" +
+                                        command + "] error: " + e);
                         self._pool.release(processProxy);
                         reject(error);
                     });
 
                 } catch (e) {
-                    console.log("StatefulProcessCommandProxy.executeCommand[" +
-                    command + "]: error: " + e);
+                    self._log('error',"executeCommand[" +
+                        command + "]: error: " + e);
                     self._pool.release(processProxy);
                 }
 
@@ -219,8 +235,8 @@ StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
         self._pool.acquire(function(error, processProxy) {
 
             if (error) {
-                console.log("StatefulProcessCommandProxy.executeCommands: " +
-                "error in acquire: " + error);
+                self._log('error',"executeCommands: " +
+                    "error in acquire: " + error);
 
             } else {
 
@@ -237,14 +253,14 @@ StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
                         }
 
                     }).catch(function(error) {
-                        console.log("pool executeCommands: [" +
-                        commands + "] error: " + e);
+                        self._log('error',"executeCommands: [" +
+                            commands + "] error: " + e);
                         self._pool.release(processProxy);
                         reject(error);
                     });
 
                 } catch (e) {
-                    console.log("StatefulProcessCommandProxy.executeCommands: error: " + e);
+                    self._log('error',"executeCommands: error: " + e);
                     self._pool.release(processProxy);
                 }
 
