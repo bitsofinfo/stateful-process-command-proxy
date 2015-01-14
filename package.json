@@ -13,7 +13,10 @@
         "command",
         "process",
         "os",
-        "command",
+        "dos",
+        "unix",
+        "commandline",
+        "command line",
         "shell",
         "bash",
         "powershell",
@@ -23,7 +26,7 @@
     "dependencies":{
         "buffer-builder":"latest",
         "fifo":"latest",
-        "promisejs":"latest",
+        "promise":"latest",
         "generic-pool":"latest"
     },
     "devDependencies":{
