@@ -47,7 +47,8 @@ describe('test stateful-process-command-proxy', function() {
                                 'echo test1': function(cmdResult) { assert.equal('test1', cmdResult.stdout.trim()); },
                                 'ls .' : function(cmdResult) { assert(cmdResult.stdout.indexOf('initCmd.txt') != -1); },
                                 'TEST1=testvar' : function(cmdResult) { assert(true); },
-                                'echo $TEST1' : function(cmdResult) { assert.equal('testvar',cmdResult.stdout.trim()); }
+                                'echo $TEST1' : function(cmdResult) { assert.equal('testvar',cmdResult.stdout.trim()); },
+                                'echo $testenvvar' : function(cmdResult) { assert.equal('value1',cmdResult.stdout.trim()); }
                             }
 
 
@@ -70,10 +71,26 @@ describe('test stateful-process-command-proxy', function() {
                 processCommand: config.processCommand,
                 processArgs:    config.processArgs,
 
+
+                processRetainMaxCmdHistory : 5,
+                processInvalidateOnRegex : {
+                                            'any':['.*test.*'],
+                                            'stdout':['.*test.*'],
+                                            'stderr':['.*test.*']
+                                        },
+                processCwd : null,
+                processEnvMap : {"testenvvar":"value1"},
+                processUid : null,
+                processGid : null,
+
                 initCommands: config.initCommands,
 
                 validateFunction: function(processProxy) {
-                    return true;
+                    var isValid = processProxy.isValid();
+                    if(!isValid) {
+                        console.log("ProcessProxy.isValid() returns FALSE!");
+                    }
+                    return isValid;
                 },
 
 

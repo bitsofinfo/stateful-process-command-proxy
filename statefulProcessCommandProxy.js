@@ -16,7 +16,15 @@ function StatefulProcessCommandProxy(config) {
 
             try {
                 console.log("StatefulProcessCommandProxy - create: " + config.processCommand);
-                processProxy = new ProcessProxy(config.processCommand, config.processArgs);
+                processProxy = new ProcessProxy(config.processCommand,
+                                                config.processArgs,
+                                                config.processRetainMaxCmdHistory,
+                                                config.processInvalidateOnRegex,
+                                                config.processCwd,
+                                                config.processEnvMap,
+                                                config.processUid,
+                                                config.processGid);
+
 
                 // initialize
                 processProxy.initialize(config.initCommands)
@@ -95,7 +103,7 @@ StatefulProcessCommandProxy.prototype.shutdown = function() {
     var self = this;
     return new Promise(function(fulfill, reject) {
         self._pool.drain(function() {
-            console.log("StatefulProcessCommandProxy is shutting down all " +
+            console.log("StatefulProcessCommandProxy is shutting down all" +
                 " pooled ProcessProxies...");
             self._pool.destroyAllNow();
             fulfill();

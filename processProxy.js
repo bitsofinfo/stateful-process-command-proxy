@@ -8,11 +8,182 @@ var Promise = require('promise');
 var MARKER_DONE = '__done__';
 
 
-function ProcessProxy(processToSpawn, arguments) {
+/**
+* ProcessProxy constructor
+*
+* @param processToSpawn full path to the process/shell to be launched
+* @param arguments array of arguments for the process
+*
+* @param retainMaxCmdHistory optional, default 0; set to 0 to
+*                            retain no command history, otherwise 1-N
+*
+* @param invalidateOnRegex optional regex pattern config object in the format:
+*
+*                           {
+*                           'any' : ['regex1', ....],
+*                           'stdout' : ['regex1', ....],
+*                           'stderr' : ['regex1', ....]
+*                           }
+*
+*                          where on Command.finish() if the regex matches the
+*                          Command's output in the respective 'type'
+*                          (where 'type' 'any' matches either stdout or stderr)
+*                          will ensure that this ProcessProxies isValid()
+*                          returns FALSE. Note that regex strings will be parsed
+*                          into actual RegExp objects
+*
+* @param cwd optional current working directory path to launch the process in
+* @param envMap optional hash of k/v pairs of environment variables
+* @param uid optional uid for the process
+* @param gid optional gid for the process
+*
+*
+*/
+function ProcessProxy(processToSpawn, arguments,
+                      retainMaxCmdHistory, invalidateOnRegex,
+                      cwd, envMap, uid, gid) {
+
     this._processToSpawn = processToSpawn;
     this._processArguments = arguments;
+
+
+    if(typeof(retainMaxCmdHistory)==='undefined') {
+        this._retainMaxCmdHistory = 0;
+    } else {
+        this._retainMaxCmdHistory = retainMaxCmdHistory;
+    }
+
+    if(typeof(invalidateOnRegex)==='undefined') {
+        this._regexesMap = new Object();
+
+    } else {
+
+        this._regexesMap = new Object();
+        this._invalidateOnRegexConfig = invalidateOnRegex;
+
+        // build the _regexesMap from the config
+        if (Object.keys(this._invalidateOnRegexConfig).length > 0) {
+
+            var anyRegexes = this._invalidateOnRegexConfig['any'];
+            var stdoutRegexes = this._invalidateOnRegexConfig['stdout'];
+            var stderrRegexes = this._invalidateOnRegexConfig['stderr'];
+
+            // where we will actually hold the parsed regexes
+            var regexpsForStdout = []; // stdout + any
+            var regexpsForStderr = []; // stderr + any
+
+            this._regexesMap['stdout'] = regexpsForStdout;
+            this._regexesMap['stderr'] = regexpsForStderr;
+
+            this._parseRegexes(anyRegexes,[regexpsForStdout,regexpsForStderr]);
+            this._parseRegexes(stdoutRegexes,[regexpsForStdout]);
+            this._parseRegexes(stderrRegexes,[regexpsForStderr]);
+        }
+    }
+
+    // if this process proxy is valid
+    this._isValid = true;
+
+    // options
+    this._processOptions = new Object();
+
+    if (cwd) {
+        this._processOptions['cwd'] = cwd;
+    }
+
+    if (envMap) {
+        this._processOptions['env'] = envMap;
+    }
+
+    if (uid) {
+        this._processOptions['uid'] = uid;
+    }
+
+    if (gid) {
+        this._processOptions['gid'] = gid;
+    }
+
     this._commandStack = new fifo();
 };
+
+ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendTo) {
+    if (regexesToParse && regexesToParse.length > 0) {
+
+        // parse all 'any' regexes to RegExp objects
+        for (var i=0; i<regexesToParse.length; i++) {
+
+            var regexStr = regexesToParse[i];
+            try {
+                var parsed = new RegExp(regexStr);
+                for (var j=0; j<regexpsToAppendTo.length; j++) {
+                    regexpsToAppendTo[j].push(parsed);
+                }
+
+            } catch(exception) {
+                console.log("Error parsing invalidation regex: "
+                    + regexStr + " err:"+exception);
+            }
+        }
+    }
+}
+
+
+ProcessProxy.prototype.isValid = function() {
+    return this._isValid;
+}
+
+/**
+* _handleCommandFinished()
+*   internal method that analyzes a just finish()ed command and
+*   evaluates all process invalidation regexes against it
+**/
+ProcessProxy.prototype._handleCommandFinished = function(command) {
+    if (command && command.isCompleted()) {
+
+        // not configured for regexe invalidation
+        if(Object.keys(this._regexesMap).length == 0) {
+            return;
+        }
+
+        var stdout = command.getStdout();
+        var stderr = command.getStderr();
+
+        var stdoutRegExps = this._regexesMap['stdout'];
+        var stderrRegExps = this._regexesMap['stderr'];
+
+        // check stderr first
+        if (stderr && stderr.length > 0 && stderrRegExps.length > 0) {
+
+            for (var i=0; i<stderrRegExps.length; i++) {
+                var regexp = stderrRegExps[i];
+                var result = regexp.exec(stderr);
+
+                if (result) {
+                    this._isValid = false;
+                    console.log("ProcessProxy: stderr matches invalidation regex: "
+                        + regexp.toString() + " stderr: " + stderr);
+                    return; // exit!
+                }
+            }
+        }
+
+        // check stdout last
+        if (stdout && stdout.length > 0 && stdoutRegExps.length > 0) {
+
+            for (var i=0; i<stdoutRegExps.length; i++) {
+                var regexp = stdoutRegExps[i];
+                var result = regexp.exec(stdout);
+
+                if (result) {
+                    this._isValid = false;
+                    console.log("ProcessProxy: stdout matches invalidation regex: "
+                        + regexp.toString() + " stdout: " + stdout);
+                    return; // exit!
+                }
+            }
+        }
+    }
+}
 
 
 /**
@@ -70,6 +241,7 @@ ProcessProxy.prototype.onData = function(type, data) {
                     // force the command to finish
                     if (cmd) {
                         cmd.finish();
+                        this._handleCommandFinished(cmd);
                     }
 
                 // there is data to apply
@@ -82,6 +254,7 @@ ProcessProxy.prototype.onData = function(type, data) {
                     if (cmd) {
                         cmd.handleData(type, block);
                         cmd.finish();
+                        this._handleCommandFinished(cmd);
                     }
 
                 }
@@ -127,9 +300,9 @@ ProcessProxy.prototype.initialize = function(initCommands) {
         try {
             // spawn
             console.log("Spawning process: " + self._processToSpawn);
-            self._process = spawn(self._processToSpawn, self._processArguments);
+            self._process = spawn(self._processToSpawn, self._processArguments, self._processOptions);
             console.log("Process: " + self._processToSpawn +
-            " PID: " + self._process.pid);
+                " PID: " + self._process.pid);
 
             // register stdout stream handler
             self._process.stdout.on('data', function(data) {
@@ -142,9 +315,20 @@ ProcessProxy.prototype.initialize = function(initCommands) {
             });
 
             // register close handler
-            self._process.on('close', function(code) {
-                console.log('child process exited with code ' + code);
+            self._process.on('close', function(code,signal) {
+                console.log('child process received close; code:' + code + ' signal:'+signal);
             });
+
+            // register error handler
+            self._process.on('error', function(err) {
+                console.log('child process received error ' + err);
+            });
+
+            // register exit handler
+            self._process.on('exit', function(code, signal) {
+                console.log('child process received exit; code:' + code + ' signal:'+signal);
+            });
+
 
             // run all initCommands if provided
             if (initCommands) {
@@ -323,3 +507,17 @@ ProcessProxy.prototype.executeCommands = function(commands) {
 
 
         };
+
+
+ProcessProxy.prototype.getStatus = new function() {
+
+    var status = {
+        'process':this._processToSpawn,
+        'arguments':this._processArguments,
+        'options':this._processOptions
+    };
+
+    status['commandHistory']
+
+
+}
