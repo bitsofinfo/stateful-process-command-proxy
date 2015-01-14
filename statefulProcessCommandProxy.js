@@ -95,7 +95,8 @@ StatefulProcessCommandProxy.prototype.shutdown = function() {
     var self = this;
     return new Promise(function(fulfill, reject) {
         self._pool.drain(function() {
-            console.log("shutting down");
+            console.log("StatefulProcessCommandProxy is shutting down all " +
+                " pooled ProcessProxies...");
             self._pool.destroyAllNow();
             fulfill();
         });
