@@ -65,7 +65,7 @@ describe('test stateful-process-command-proxy', function() {
         var config = (isWin ? configs['windows'] : configs['nix']);
 
         // configure our proxy/pool of processes
-        var StatefulProcessCommandProxy = new StatefulProcessCommandProxy(
+        var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
             {
                 name: "StatefulProcessCommandProxy",
                 max: 1,
@@ -77,7 +77,7 @@ describe('test stateful-process-command-proxy', function() {
                 processArgs:    config.processArgs,
 
 
-                processRetainMaxCmdHistory : 5,
+                processRetainMaxCmdHistory : 10,
                 processInvalidateOnRegex : {
                                             'any':['.*nomatch.*'],
                                             'stdout':['.*nomatch.*'],
@@ -104,7 +104,7 @@ describe('test stateful-process-command-proxy', function() {
             });
 
         // invoke all test commands
-        var promise = StatefulProcessCommandProxy.executeCommands(Object.keys(config.testCommands));
+        var promise = statefulProcessCommandProxy.executeCommands(Object.keys(config.testCommands));
 
         // when all commands are executed
         // lets assert them all
@@ -119,15 +119,32 @@ describe('test stateful-process-command-proxy', function() {
                 asserter(cmdResults[key]);
             }
 
+            // collect status
+            statefulProcessCommandProxy.getStatus()
+                .then(function(statuses) {
+                    console.log(JSON.stringify(statuses,null,2));
+                }).catch(function(error) {
+                    console.log(error);
+                    assert(false);
+                });
+
             // shut it all down
-            StatefulProcessCommandProxy.shutdown();
-            setTimeout(function() {
-                assert(fs.existsSync('initCmd.txt'));
-                assert(fs.existsSync('destroyCmd.txt'));
-                fs.unlink("initCmd.txt");
-                fs.unlink("destroyCmd.txt");
-                done()
-            },500);
+            statefulProcessCommandProxy.shutdown()
+
+                .then(function(result) {
+
+                    setTimeout(function() {
+                        assert(fs.existsSync('initCmd.txt'));
+                        assert(fs.existsSync('destroyCmd.txt'));
+                        fs.unlink("initCmd.txt");
+                        fs.unlink("destroyCmd.txt");
+                        done()
+                    },1000);
+
+                }).catch(function(err) {
+                    console.log(err);
+                });
+
 
         }).catch(function(exception) {
             done(exception);

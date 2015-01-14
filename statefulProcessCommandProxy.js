@@ -7,6 +7,8 @@ var Promise = require('promise');
 
 function StatefulProcessCommandProxy(config) {
 
+    this._poolConfig = config;
+
     this._pool = poolModule.Pool({
 
         name: config.name,
@@ -97,8 +99,65 @@ function StatefulProcessCommandProxy(config) {
         log: config.log
     });
 
+
+
 }
 
+StatefulProcessCommandProxy.prototype.getStatus = function() {
+
+    var self = this;
+
+    return new Promise(function(fulfill,reject) {
+        var collected = 0;
+        var poolSize = self._pool.getPoolSize();
+        var statuses = [];
+
+        // iterate through entire pool
+        for (var i=0; i<poolSize; i++) {
+
+            try {
+                // aquire proxy
+                self._pool.acquire(function(error, processProxy) {
+
+                    if (error) {
+                        console.log("StatefulProcessCommandProxy.getStatus[" +
+                        command + "]: error in acquire: " + error);
+
+                    } else {
+                        // we have the ProcessProxy, set a timeout to
+                        // fetch its status in 2s, which lets it be checked
+                        // out long enought that the next iteration won't
+                        // end up aquiring the same object...
+                         setTimeout(function() {
+
+                             try {
+                                 statuses.push(processProxy.getStatus());
+                                 collected++
+                                 if (collected == poolSize) {
+                                     fulfill(statuses); // we are done.
+                                 }
+                             } catch (e) {
+                                 console.log("StatefulProcessCommandProxy.getStatus[" +
+                                    command + "]: error: " + e);
+                                 reject(e);
+
+                             } finally {
+                                 self._pool.release(processProxy);
+                             }
+
+                         },2500);
+
+                    }
+                });
+            } catch(exception) {
+                console.log("StatefulProcessCommandProxy.getStatus[" +
+                    command + "]: error in aquiring: " + e);
+                reject(e);
+            }
+        }
+
+    });
+}
 
 StatefulProcessCommandProxy.prototype.shutdown = function() {
     var self = this;
