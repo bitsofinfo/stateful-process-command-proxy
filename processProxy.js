@@ -59,7 +59,9 @@ fifo.prototype.toArray = function () {
 * @param envMap optional hash of k/v pairs of environment variables
 * @param uid optional uid for the process
 * @param gid optional gid for the process
-*
+* @param logFunction optional function that should have the signature
+*                             (severity,origin,message), where log messages will
+*                             be sent to. If null, logs will just go to console
 *
 */
 function ProcessProxy(processToSpawn, arguments,
@@ -138,10 +140,16 @@ function ProcessProxy(processToSpawn, arguments,
 };
 
 
+/**
+* Internal log function that will automatically set origin = classname
+*/
 ProcessProxy.prototype._log = function(severity,msg) {
     this._log2(severity,this.__proto__.constructor.name+"["+this._processPid+"]",msg);
 }
 
+/**
+* Internal log function, if no "logFunction" is defined will log to console
+*/
 ProcessProxy.prototype._log2 = function(severity,origin,msg) {
     if (this._logFunction) {
         this._logFunction(severity,origin,msg);
@@ -151,10 +159,21 @@ ProcessProxy.prototype._log2 = function(severity,origin,msg) {
     }
 }
 
+/**
+* Return the PID of the child_process that was spawned.
+**/
 ProcessProxy.prototype.getPid = function() {
     return this._processPid;
 }
 
+/**
+* Parses a set of String regular expressions into RegExp objects and
+* adds each resulting RegExp object to each array in 'regexpsToAppendTo'
+*
+* @param regexesToParse array of raw regular expression strings
+* @param regexpsToAppendTo and array of target arrays which will each have
+*                          the parsed RegExps appended to them
+**/
 ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendTo) {
     if (regexesToParse && regexesToParse.length > 0) {
 
@@ -177,6 +196,10 @@ ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendT
 }
 
 
+/**
+* Return if this process is "valid" or not, valid meaning usable or ready
+* to execute commands
+**/
 ProcessProxy.prototype.isValid = function() {
     return this._isValid;
 }

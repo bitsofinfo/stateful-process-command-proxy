@@ -4,7 +4,65 @@ var poolModule = require('generic-pool');
 var ProcessProxy = require('./processProxy');
 var Promise = require('promise');
 
+/**
+* StatefulProcessCommandProxy is the gateway for executing commands
+* for execution against an internal pool of stateful long-lived child_processes
+* such as shells on the local system (i.e. powershell, bash etc)
+*
+* The config object takes the following object:
 
+    name:           The name of this instance, arbitrary
+
+    max:               maximum number of processes to maintain
+
+    min:               minimum number of processes to maintain
+
+    idleTimeoutMS:     idle in milliseconds by which a process will be destroyed
+
+    processCommand: full path to the actual process to be spawned (i.e. /bin/bash)
+
+    processArgs:    arguments to pass to the process command
+
+    processRetainMaxCmdHistory: for each process spawned, the maximum number
+                                of command history objects to retain in memory
+                                (useful for debugging), default 0
+
+    processInvalidateOnRegex: optional config of regex patterns who if match
+                              their respective type, will flag the process as invalid
+
+                                          {
+                                         'any' : ['regex1', ....],
+                                         'stdout' : ['regex1', ....],
+                                         'stderr' : ['regex1', ....]
+                                         }
+
+    processCwd:    optional current working directory for the processes to be spawned
+
+    processEnvMap: optional hash/object of key-value pairs for environment variables
+                   to set for the spawned processes
+
+    processUid:    optional uid to launch the processes as
+
+    processGid:    optional gid to launch the processes as
+
+    logFunction:    optional function that should have the signature
+                    (severity,origin,message), where log messages will
+                    be sent to. If null, logs will just go to console
+
+    initCommands:   optional array of actual commands to execute on each newly
+                    spawned ProcessProxy in the pool before it is made available
+
+    preDestroyCommands: optional array of actual commands to execute on a process
+                        before it is killed/destroyed on shutdown or being invalid
+
+    validateFunction:  optional function that should have the signature to accept
+                       a ProcessProxy object, and should return true/false if the
+                       process is valid or not, at a minimum this should call
+                       ProcessProxy.isValid(). If the function is not provided
+                       the default behavior is to only check ProcessProxy.isValid()
+
+*
+**/
 function StatefulProcessCommandProxy(config) {
 
     this._poolConfig = config;
@@ -58,8 +116,9 @@ function StatefulProcessCommandProxy(config) {
         validate: function(processProxy) {
             if (config.validateFunction) {
                 return config.validateFunction(processProxy);
+            } else {
+                return processProxy.isValid();
             }
-            return true;
         },
 
 
