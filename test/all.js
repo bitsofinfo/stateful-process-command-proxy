@@ -132,8 +132,8 @@ describe('test stateful-process-command-proxy', function() {
                     setTimeout(function() {
                         assert(fs.existsSync('initCmd.txt'));
                         assert(fs.existsSync('destroyCmd.txt'));
-                        fs.unlink("initCmd.txt");
-                        fs.unlink("destroyCmd.txt");
+                        fs.unlinkSync("initCmd.txt");
+                        fs.unlinkSync("destroyCmd.txt");
                         done()
                     },1000);
 
