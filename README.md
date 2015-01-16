@@ -13,4 +13,6 @@ Simply doing an child_process.**exec** per command to launch an external process
 
 The diagram below should conceptually give you an idea of what this module does. 
 
+**The local user that the node process runs as should have virtually zero rights! Also be sure to properly configure a restricted UID/GID when instatiating a new instance of this**
+
 ![Alt text](/diagram.png "Diagram1")
