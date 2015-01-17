@@ -6,6 +6,7 @@ It is important to note, that despite the use-case described below for this proj
 * [Origin](#origin)
 * [Usage](#usage)
 * [Example](#example)
+* [Security](#security)
 
 ### Origin <a id="Origin"></a>
 
@@ -161,4 +162,12 @@ setTimeout(function() {
 
   ```
   
+### Security <a id="security"></a>
+
+Obviously this module can expose you to some insecure situations depending on how you use it... you are providing a gateway to an external process to Node on your host machine! (likely a shell in most use-cases). Here are some tips; ultimately its your responsibility to secure your system.
+
+* Ensure that the node process is running as a user with very limited rights
+* Make use of the uid/gid configuration appropriately to further limit the processes
+* Never expose calls to this module directly, instead you should write a wrapper layer around StatefulProcessCommandProxy that protects, analyzes and sanitizes external input that can materialize in a `command` statement. 
+* All commands you pass to `execute` should be sanitized to protect from injection attacks
   
