@@ -13,16 +13,74 @@ Simply doing an child_process.**exec** per command to launch an external process
 
 The diagram below should conceptually give you an idea of what this module does. 
 
-**The local user that the node process runs as should have virtually zero rights! Also be sure to properly configure a restricted UID/GID when instatiating a new instance of this**
+**The local user that the node process runs as should have virtually zero rights! Also be sure to properly configure a restricted UID/GID when instatiating a new instance of this. See security notes below.**
 
 ![Alt text](/diagram.png "Diagram1")
 
 ### Usage
 
+To use StatefulProcessCommandProxy the constructor takes one parameter which is a configuration object who's properties are described below. Please refer to the example (following) and the unit-test for more details.
+
+```
+    name:  The name of this instance, arbitrary
+
+    max: maximum number of processes to maintain
+
+    min: minimum number of processes to maintain
+
+    idleTimeoutMS: idle in milliseconds by which a process will be destroyed
+
+    processCommand: full path to the actual process to be spawned (i.e. /bin/bash)
+
+    processArgs:    arguments to pass to the process command
+
+    processRetainMaxCmdHistory: default 0, for each process spawned, the maximum number
+                                of command history objects to retain in memory
+                                (useful for debugging via the getStatus() method)
+
+    processInvalidateOnRegex: optional config of regex patterns who if match
+                              their respective type, will flag the process as invalid
+
+                                          {
+                                         'any' : ['regex1', ....],
+                                         'stdout' : ['regex1', ....],
+                                         'stderr' : ['regex1', ....]
+                                         }
+
+    processCwd:    optional current working directory for the processes to be spawned
+
+    processEnvMap: optional hash/object of key-value pairs for environment variables
+                   to set for the spawned processes
+
+    processUid:    optional uid to launch the processes as
+
+    processGid:    optional gid to launch the processes as
+
+    logFunction:    optional function that should have the signature
+                    (severity,origin,message), where log messages will
+                    be sent to. If null, logs will just go to console
+
+    initCommands:   optional array of actual commands to execute on each newly
+                    spawned ProcessProxy in the pool before it is made available
+
+    preDestroyCommands: optional array of actual commands to execute on a process
+                        before it is killed/destroyed on shutdown or being invalid
+
+    validateFunction:  optional function that should have the signature to accept
+                       a ProcessProxy object, and should return true/false if the
+                       process is valid or not, at a minimum this should call
+                       ProcessProxy.isValid(). If the function is not provided
+                       the default behavior is to only check ProcessProxy.isValid()
+                       which is sufficient for most use cases if 'processInvalidateOnRegex'
+                       is properly configured
+```
+
 Its highly recommended you check out the unit-tests for some examples in addition to the below:
 
-
 ### Example
+
+Note this example is for a machine w/ bash in the typical location. Windows (or other) can adjust the below as necessary to run). 
+
 ```
 var Promise = require('promise');
 var StatefulProcessCommandProxy = require("./");
