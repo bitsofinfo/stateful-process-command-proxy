@@ -93,8 +93,8 @@ var StatefulProcessCommandProxy = require("./");
 var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
     {
       name: "test",
-      max: 1,
-      min: 1,
+      max: 2,
+      min: 2,
       idleTimeoutMillis: 10000,
 
       logFunction: function(severity,origin,msg) {
@@ -139,6 +139,15 @@ statefulProcessCommandProxy.executeCommand('echo testInitVar')
   }).catch(function(error) {
       console.log("Error: " + error);
   });
+  
+  
+  statefulProcessCommandProxy.executeCommand('echo "this command has an error and will be '+
+                ' destroyed because it matches our invalidation regex"')
+  .then(function(cmdResult) {
+      console.log("testInitVar value: Stdout: " + cmdResult.stdout);
+  }).catch(function(error) {
+      console.log("Error: " + error);
+  });
 
 // set a var in the shell
 statefulProcessCommandProxy.executeCommand('MY_VARIABLE=test1;echo MY_VARIABLE WAS JUST SET')
@@ -160,7 +169,7 @@ setTimeout(function() {
   statefulProcessCommandProxy.shutdown();
 },5000);
 
-  ```
+```
   
 ###<a id="security"></a> Security 
 
