@@ -4,6 +4,8 @@ Node.js module for executing os commands against a pool of stateful, long-lived 
 It is important to note, that despite the use-case described below for this project's origination, this node module can be used for proxying long-lived bash process (or any shell really) in addition to powershell etc. It works and has been tested on both *nix, osx and windows hosts running the latest version of node.
 
 * [Origin](#origin)
+* [Install & Tests](#install)
+* [History](#history)
 * [Usage](#usage)
 * [Example](#example)
 * [Security](#security)
@@ -21,6 +23,24 @@ The diagram below should conceptually give you an idea of what this module does.
 **The local user that the node process runs as should have virtually zero rights! Also be sure to properly configure a restricted UID/GID when instatiating a new instance of this. See security notes below.**
 
 ![Alt text](/diagram.png "Diagram1")
+
+###<a id="install"></a> Install & Tests
+
+```
+npm install stateful-process-command-proxy
+```
+
+```
+npm install mocha
+mocha test/all.js
+```
+
+###<a id="history"></a> History
+
+```
+v1.0-beta.1 - 2014-01-17
+    - Initial version
+```
 
 ###<a id="usage"></a> Usage 
 
