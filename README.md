@@ -3,7 +3,11 @@ Node.js module for executing os commands against a pool of stateful, long-lived 
 
 It is important to note, that despite the use-case described below for this project's origination, this node module can be used for proxying long-lived bash process (or any shell really) in addition to powershell etc. It works and has been tested on both *nix, osx and windows hosts running the latest version of node.
 
-### Origin
+* [Origin](#origin)
+* [Usage](#usage)
+* [Example](#example)
+
+### Origin <a id="Origin"></a>
 
 This project originated out of the need to execute various Powershell commands (at fairly high volume and frequency) against services within Office365/Azure bridged via a custom node.js implemented REST API; this was due to the lack of certain features in the REST GraphAPI for Azure/o365, that are available only in Powershell. 
 
@@ -17,7 +21,7 @@ The diagram below should conceptually give you an idea of what this module does.
 
 ![Alt text](/diagram.png "Diagram1")
 
-### Usage
+### Usage <a id="usage"></a>
 
 To use StatefulProcessCommandProxy the constructor takes one parameter which is a configuration object who's properties are described below. Please refer to the example (following) and the unit-test for more details.
 
@@ -77,7 +81,7 @@ To use StatefulProcessCommandProxy the constructor takes one parameter which is 
 
 Its highly recommended you check out the unit-tests for some examples in addition to the below:
 
-### Example
+### Example <a id="example"></a>
 
 Note this example is for a machine w/ bash in the typical location. Windows (or other) can adjust the below as necessary to run). 
 
