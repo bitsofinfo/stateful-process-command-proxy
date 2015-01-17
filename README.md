@@ -16,3 +16,72 @@ The diagram below should conceptually give you an idea of what this module does.
 **The local user that the node process runs as should have virtually zero rights! Also be sure to properly configure a restricted UID/GID when instatiating a new instance of this**
 
 ![Alt text](/diagram.png "Diagram1")
+
+### Usage
+
+Its highly recommended you check out the unit-tests for some examples in addition to the below:
+
+```
+var Promise = require('promise');
+var StatefulProcessCommandProxy = require("stateful-process-command-proxy");
+
+var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
+    {
+      name: "test",
+      max: 1,
+      min: 1,
+      idleTimeoutMillis: 10000,
+      
+      logFunction: function(severity,origin,msg) {
+          console.log(severity.toUpperCase() + " " +origin+" "+ msg);
+      },
+
+      processCommand: '/bin/bash',
+      processArgs:  ['-s'],
+      processRetainMaxCmdHistory : 10,
+      
+      processInvalidateOnRegex : 
+          {
+            'any':['.*error.*'],
+            'stdout':['.*error.*'],
+            'stderr':['.*error.*']
+          },
+          
+      processCwd : './',
+      processEnvMap : {"testVar1":"value1"},
+      processUid : null,
+      processGid : null,
+
+      initCommands: [ 'echo Hellow World' ],
+
+      validateFunction: function(processProxy) {
+          return processProxy.isValid();
+      },
+
+      preDestroyCommands: [ 'echo Goodbye!' ]
+    });
+    
+// set a var in the shell
+statefulProcessCommandProxy.executeCommand('MY_VARIABLE=test1')
+  .then(function(cmdResult) {
+      console.log("Stdout: " + cmdResult.stdout);
+      console.log("Stderr: " + cmdResult.stderr);
+  }).catch(function(error) {
+      console.log("Error: " + error);
+  });
+  
+// echo it back
+statefulProcessCommandProxy.executeCommand('echo $MY_VARIABLE')
+  .then(function(cmdResult) {
+      console.log("Stdout: " + cmdResult.stdout);
+      console.log("Stderr: " + cmdResult.stderr
+  }).catch(function(error) {
+      console.log("Error: " + error);
+  });
+  
+setTimeout(function() {
+  statefulProcessCommandProxy.shutdown();
+},5000);
+  ```
+  
+  
