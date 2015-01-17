@@ -141,10 +141,10 @@ statefulProcessCommandProxy.executeCommand('echo testInitVar')
   });
   
   
-  statefulProcessCommandProxy.executeCommand('echo "this command has an error and will be '+
-                ' destroyed because it matches our invalidation regex"')
+statefulProcessCommandProxy.executeCommand('echo "this command has an error and will be '+
+                ' destroyed after check-in because it matches our invalidation regex"')
   .then(function(cmdResult) {
-      console.log("testInitVar value: Stdout: " + cmdResult.stdout);
+      console.log("error test: Stdout: " + cmdResult.stdout);
   }).catch(function(error) {
       console.log("Error: " + error);
   });
