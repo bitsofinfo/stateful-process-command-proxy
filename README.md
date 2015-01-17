@@ -8,7 +8,7 @@ It is important to note, that despite the use-case described below for this proj
 * [Example](#example)
 * [Security](#security)
 
-### Origin <a id="Origin"></a>
+###<a id="Origin"></a> Origin 
 
 This project originated out of the need to execute various Powershell commands (at fairly high volume and frequency) against services within Office365/Azure bridged via a custom node.js implemented REST API; this was due to the lack of certain features in the REST GraphAPI for Azure/o365, that are available only in Powershell. 
 
@@ -22,7 +22,7 @@ The diagram below should conceptually give you an idea of what this module does.
 
 ![Alt text](/diagram.png "Diagram1")
 
-### Usage <a id="usage"></a>
+###<a id="usage"></a> Usage 
 
 To use StatefulProcessCommandProxy the constructor takes one parameter which is a configuration object who's properties are described below. Please refer to the example (following) and the unit-test for more details.
 
@@ -82,7 +82,7 @@ To use StatefulProcessCommandProxy the constructor takes one parameter which is 
 
 Its highly recommended you check out the unit-tests for some examples in addition to the below:
 
-### Example <a id="example"></a>
+###<a id="example"></a> Example 
 
 Note this example is for a machine w/ bash in the typical location. Windows (or other) can adjust the below as necessary to run). 
 
@@ -162,7 +162,7 @@ setTimeout(function() {
 
   ```
   
-### Security <a id="security"></a>
+###<a id="security"></a> Security 
 
 Obviously this module can expose you to some insecure situations depending on how you use it... you are providing a gateway to an external process via Node on your host os! (likely a shell in most use-cases). Here are some tips; ultimately its your responsibility to secure your system.
 
