@@ -126,6 +126,7 @@ var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
       preDestroyCommands: [ 'echo This ProcessProxy is being destroyed!' ]
     });
 
+// echo the value of our env variable set above in the constructor config
 statefulProcessCommandProxy.executeCommand('echo testEnvVar')
   .then(function(cmdResult) {
       console.log("testEnvVar value: Stdout: " + cmdResult.stdout);
@@ -133,6 +134,7 @@ statefulProcessCommandProxy.executeCommand('echo testEnvVar')
       console.log("Error: " + error);
   });
 
+// echo the value of our init command that was configured above
 statefulProcessCommandProxy.executeCommand('echo testInitVar')
   .then(function(cmdResult) {
       console.log("testInitVar value: Stdout: " + cmdResult.stdout);
@@ -140,7 +142,7 @@ statefulProcessCommandProxy.executeCommand('echo testInitVar')
       console.log("Error: " + error);
   });
   
-  
+// test that our invalidation regex above traps and destroys this process instance
 statefulProcessCommandProxy.executeCommand('echo "this command has an error and will be '+
                 ' destroyed after check-in because it matches our invalidation regex"')
   .then(function(cmdResult) {
