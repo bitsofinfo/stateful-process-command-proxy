@@ -164,7 +164,7 @@ setTimeout(function() {
   
 ### Security <a id="security"></a>
 
-Obviously this module can expose you to some insecure situations depending on how you use it... you are providing a gateway to an external process to Node on your host machine! (likely a shell in most use-cases). Here are some tips; ultimately its your responsibility to secure your system.
+Obviously this module can expose you to some insecure situations depending on how you use it... you are providing a gateway to an external process via Node on your host os! (likely a shell in most use-cases). Here are some tips; ultimately its your responsibility to secure your system.
 
 * Ensure that the node process is running as a user with very limited rights
 * Make use of the uid/gid configuration appropriately to further limit the processes
