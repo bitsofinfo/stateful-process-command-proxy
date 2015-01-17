@@ -21,9 +21,11 @@ The diagram below should conceptually give you an idea of what this module does.
 
 Its highly recommended you check out the unit-tests for some examples in addition to the below:
 
+
+### Example
 ```
 var Promise = require('promise');
-var StatefulProcessCommandProxy = require("stateful-process-command-proxy");
+var StatefulProcessCommandProxy = require("./");
 
 var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
     {
@@ -31,7 +33,7 @@ var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
       max: 1,
       min: 1,
       idleTimeoutMillis: 10000,
-      
+
       logFunction: function(severity,origin,msg) {
           console.log(severity.toUpperCase() + " " +origin+" "+ msg);
       },
@@ -39,49 +41,62 @@ var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
       processCommand: '/bin/bash',
       processArgs:  ['-s'],
       processRetainMaxCmdHistory : 10,
-      
-      processInvalidateOnRegex : 
+
+      processInvalidateOnRegex :
           {
             'any':['.*error.*'],
             'stdout':['.*error.*'],
             'stderr':['.*error.*']
           },
-          
+
       processCwd : './',
-      processEnvMap : {"testVar1":"value1"},
+      processEnvMap : {"testEnvVar":"value1"},
       processUid : null,
       processGid : null,
 
-      initCommands: [ 'echo Hellow World' ],
+      initCommands: [ 'testInitVar=test' ],
 
       validateFunction: function(processProxy) {
           return processProxy.isValid();
       },
 
-      preDestroyCommands: [ 'echo Goodbye!' ]
+      preDestroyCommands: [ 'echo This ProcessProxy is being destroyed!' ]
     });
-    
-// set a var in the shell
-statefulProcessCommandProxy.executeCommand('MY_VARIABLE=test1')
+
+statefulProcessCommandProxy.executeCommand('echo testEnvVar')
   .then(function(cmdResult) {
-      console.log("Stdout: " + cmdResult.stdout);
-      console.log("Stderr: " + cmdResult.stderr);
+      console.log("testEnvVar value: Stdout: " + cmdResult.stdout);
   }).catch(function(error) {
       console.log("Error: " + error);
   });
-  
+
+statefulProcessCommandProxy.executeCommand('echo testInitVar')
+  .then(function(cmdResult) {
+      console.log("testInitVar value: Stdout: " + cmdResult.stdout);
+  }).catch(function(error) {
+      console.log("Error: " + error);
+  });
+
+// set a var in the shell
+statefulProcessCommandProxy.executeCommand('MY_VARIABLE=test1;echo MY_VARIABLE WAS JUST SET')
+  .then(function(cmdResult) {
+      console.log("Stdout: " + cmdResult.stdout);
+  }).catch(function(error) {
+      console.log("Error: " + error);
+  });
+
 // echo it back
 statefulProcessCommandProxy.executeCommand('echo $MY_VARIABLE')
   .then(function(cmdResult) {
-      console.log("Stdout: " + cmdResult.stdout);
-      console.log("Stderr: " + cmdResult.stderr
+      console.log("MY_VARIABLE value: Stdout: " + cmdResult.stdout);
   }).catch(function(error) {
       console.log("Error: " + error);
   });
-  
+
 setTimeout(function() {
   statefulProcessCommandProxy.shutdown();
 },5000);
+
   ```
   
   
