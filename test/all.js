@@ -71,7 +71,8 @@ describe('test stateful-process-command-proxy', function() {
                 max: 1,
                 min: 1,
                 idleTimeoutMillis: 10000,
-                log: function(severity,origin,msg) {
+                
+                logFunction: function(severity,origin,msg) {
                     console.log(severity.toUpperCase() + " " +origin+" "+ msg);
                 },
 
