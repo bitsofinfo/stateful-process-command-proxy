@@ -167,9 +167,12 @@ statefulProcessCommandProxy.executeCommand('echo $MY_VARIABLE')
       console.log("Error: " + error);
   });
 
+// shutdown the statefulProcessCommandProxy
+// this is important and your destroy hooks will
+// be called at this time.
 setTimeout(function() {
   statefulProcessCommandProxy.shutdown();
-},5000);
+},10000);
 
 ```
   
