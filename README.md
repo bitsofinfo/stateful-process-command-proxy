@@ -1,6 +1,8 @@
 # stateful-process-command-proxy
 Node.js module for executing os commands against a pool of stateful, long-lived child processes such as bash or powershell
 
+[![NPM](https://nodei.co/npm/stateful-process-command-proxy.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/stateful-process-command-proxy/)
+
 It is important to note, that despite the use-case described below for this project's origination, this node module can be used for proxying long-lived bash process (or any shell really) in addition to powershell etc. It works and has been tested on both *nix, osx and windows hosts running the latest version of node.
 
 * [Origin](#origin)
