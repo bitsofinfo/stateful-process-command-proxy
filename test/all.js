@@ -71,7 +71,7 @@ describe('test stateful-process-command-proxy', function() {
                 max: 1,
                 min: 1,
                 idleTimeoutMillis: 10000,
-                
+
                 logFunction: function(severity,origin,msg) {
                     console.log(severity.toUpperCase() + " " +origin+" "+ msg);
                 },
@@ -116,10 +116,10 @@ describe('test stateful-process-command-proxy', function() {
             // assert all commands, lookup the command
             // via the result, to get its asserter
             // then invoke the asserter passing the cmd result
-            for (var key in cmdResults) {
-                var command = cmdResults[key].command;
+            for (var i=0; i<cmdResults.length; i++) {
+                var command = cmdResults[i].command;
                 var asserter = config.testCommands[command];
-                asserter(cmdResults[key]);
+                asserter(cmdResults[i]);
             }
 
             // collect status

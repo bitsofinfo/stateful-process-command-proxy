@@ -461,9 +461,8 @@ ProcessProxy.prototype.executeCommand = function(command) {
 
         .then(function(cmdResults) {
 
-            for (var cmd in cmdResults) {
-                fulfill(cmdResults[cmd]);
-            }
+            fulfill(cmdResults[0]);
+
 
         }).catch(function(error) {
             reject(error);
@@ -475,14 +474,16 @@ ProcessProxy.prototype.executeCommand = function(command) {
 
 /**
 * executeCommands - takes an array of raw command strings and returns promise
-*                  to be fulfilled with a a hash
-*                  of "command" -> {command:cmd, stdout:xxxx, stderr:xxxxx}
+*                  to be fulfilled with a an array of
+*                  of [
+*                       {command:cmd1, stdout:xxxx, stderr:xxxxx},
+*                       {command:cmd2, stdout:xxxx, stderr:xxxxx}
+*                     ]
 *
 * @commands Array of raw command/shell statements to be executed
 *
 * @return Promise, on fulfill returns promise to be fulfilled with a
-*                  hash of commands -> {stdout:xxxx, stderr:xxxxx}
-*                  on reject returns an exception
+*                  array of command results as described above
 *
 **/
 ProcessProxy.prototype.executeCommands = function(commands) {
@@ -493,7 +494,7 @@ ProcessProxy.prototype.executeCommands = function(commands) {
 
         try {
 
-            var cmdResults = new Object();
+            var cmdResults = [];
 
             for (var i = 0; i < commands.length; i++) {
 
@@ -505,13 +506,13 @@ ProcessProxy.prototype.executeCommands = function(commands) {
                     new Command(command,
                         function(cmd, stdout, stderr) {
 
-                            cmdResults[cmd] = {
-                                'command': cmd,
-                                'stdout': stdout,
-                                'stderr': stderr
-                            };
+                            cmdResults.push({
+                                  'command': cmd,
+                                  'stdout': stdout,
+                                  'stderr': stderr
+                              });
 
-                            if (Object.keys(cmdResults).length == commands.length) {
+                            if (cmdResults.length == commands.length) {
                                 fulfill(cmdResults);
                             }
 

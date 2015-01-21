@@ -133,8 +133,8 @@ function StatefulProcessCommandProxy(config) {
                     delete self._pid2processMap[processProxy.getPid()];
 
                     if (cmdResults) {
-                        for (var cmd in cmdResults) {
-                            var cmdResult = cmdResults[cmd];
+                        for (var i=0; i<cmdResults.length; i++) {
+                            var cmdResult = cmdResults[i];
                             self._log('info',"process preDestroyCmd[" +
                             cmdResult.command + "] out:" + cmdResult.stdout +
                                 " err:" + cmdResult.stderr);
@@ -280,14 +280,17 @@ StatefulProcessCommandProxy.prototype.executeCommand = function(command) {
 
 /**
 * executeCommand - takes an array of raw command strings and returns promise
-*                  to be fulfilled with a a hash
-*                  of "command" -> {command:cmd, stdout:xxxx, stderr:xxxxx}
+*                  to be fulfilled with an array of cmdResults
+*                  [
+*                    {command:cmd1, stdout:xxxx, stderr:xxxxx},
+*                    {command:cmd2, stdout:xxxx, stderr:xxxxx}
+*                  ]
+*
 *
 * @commands Array of raw command/shell statements to be executed
 *
 * @return Promise, on fulfill returns promise to be fulfilled with a
-*                  hash of commands -> {stdout:xxxx, stderr:xxxxx}
-*                  on reject returns an exception
+*                  array of cmdResults
 *
 **/
 StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
