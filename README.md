@@ -40,6 +40,9 @@ mocha test/all.js
 ###<a id="history"></a> History
 
 ```
+v1.0-beta.2 - 2014-01-21
+    - New return types for executeCommands - is now an array
+    
 v1.0-beta.1 - 2014-01-17
     - Initial version
 ```
