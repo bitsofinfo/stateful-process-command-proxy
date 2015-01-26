@@ -216,3 +216,4 @@ Obviously this module can expose you to some insecure situations depending on ho
 Have a look at these related projects which build on top of this module to provide some higher level functionality
 
 * https://github.com/bitsofinfo/powershell-command-executor - Introduces a higher level "registry" of powershell commands which can be generated, have arguments applied to them (and sanitized), then executed. 
+* https://github.com/bitsofinfo/powershell-command-executor-ui - Builds on top of powershell-command-executor to provide a simple Node REST API and AngularJS interface for testing the execution of commands in the registry
