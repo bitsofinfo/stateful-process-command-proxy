@@ -55,6 +55,7 @@ fifo.prototype.toArray = function () {
 *                          returns FALSE. Note that regex strings will be parsed
 *                          into actual RegExp objects
 *
+*
 * @param cwd optional current working directory path to launch the process in
 * @param envMap optional hash of k/v pairs of environment variables
 * @param uid optional uid for the process
@@ -63,10 +64,53 @@ fifo.prototype.toArray = function () {
 *                             (severity,origin,message), where log messages will
 *                             be sent to. If null, logs will just go to console
 *
+* @param processCmdBlacklistRegex optional config array regex patterns who if match the
+*                                command requested to be executed will be rejected
+*                                with an error.
+*
+*                                [ 'regex1', 'regex2'...]
+*
+*
+* @param autoInvalidationConfig optional configuration that will run the specified
+*                             commands on the given interval, and if the given
+*                             regexes match/do-not-match for each command the
+*                             process will be flagged as invalid and return FALSE
+*                             on calls to isValid(). The commands will be run in
+*                             order sequentially via executeCommands()
+*
+*         {
+*            checkIntervalMS: 30000; // check every 30s
+*            commands:
+*               [
+*                { command:'cmd1toRun',
+*
+*                   // OPTIONAL: because you can configure multiple commands
+*                   // where the first ones doe some prep, then the last one's
+*                   // output needs to be evaluated hence 'regexes'  may not
+*                   // always be present, (but your LAST command must have a
+*                   // regexes config to eval prior work, otherwise whats the point)
+*
+*                  regexes: {
+*                         // at least one key must be specified
+*                         // 'any' means either stdout or stderr
+*                         // for each regex, the 'on' property dictates
+*                         // if the process will be flagged invalid based
+*                         // on the results of the regex evaluation
+*                        'any' :    [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
+*                        'stdout' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
+*                        'stderr' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....]
+*                   }
+*               },...
+*             ]
+*        }
+*
+*
 */
 function ProcessProxy(processToSpawn, arguments,
                       retainMaxCmdHistory, invalidateOnRegex,
-                      cwd, envMap, uid, gid, logFunction) {
+                      cwd, envMap, uid, gid, logFunction,
+                      processCmdBlacklistRegex,
+                      autoInvalidationConfig) {
 
     this._createdAt = new Date();
     this._processPid = null;
@@ -84,33 +128,21 @@ function ProcessProxy(processToSpawn, arguments,
     }
 
 
-    this._regexesMap = new Object();
-    if(typeof(invalidateOnRegex)==='undefined') {
-        // nothing to do...
-
+    this._cmdBlacklistRegexes = [];
+    if (typeof(processCmdBlacklistRegex)=='undefined') {
+        // nothing to do
     } else {
-
-        this._invalidateOnRegexConfig = invalidateOnRegex;
-
-        // build the _regexesMap from the config
-        if (Object.keys(this._invalidateOnRegexConfig).length > 0) {
-
-            var anyRegexes = this._invalidateOnRegexConfig['any'];
-            var stdoutRegexes = this._invalidateOnRegexConfig['stdout'];
-            var stderrRegexes = this._invalidateOnRegexConfig['stderr'];
-
-            // where we will actually hold the parsed regexes
-            var regexpsForStdout = []; // stdout + any
-            var regexpsForStderr = []; // stderr + any
-
-            this._regexesMap['stdout'] = regexpsForStdout;
-            this._regexesMap['stderr'] = regexpsForStderr;
-
-            this._parseRegexes(anyRegexes,[regexpsForStdout,regexpsForStderr]);
-            this._parseRegexes(stdoutRegexes,[regexpsForStdout]);
-            this._parseRegexes(stderrRegexes,[regexpsForStderr]);
-        }
+        // parse them
+        this._parseRegexes(processCmdBlacklistRegex,[this._cmdBlacklistRegexes]);
     }
+
+
+    // auto invalidation config build
+    this._buildAutoInvalidationConfig(autoInvalidationConfig);
+
+    // build invalidation regexes map
+    this._buildInvalidationRegexesMap(invalidateOnRegex);
+
 
     // if this process proxy is valid
     this._isValid = true;
@@ -138,6 +170,67 @@ function ProcessProxy(processToSpawn, arguments,
 
     this._commandStack.toArray();
 };
+
+// internal method to process the constructor's invalidateOnRegex param
+ProcessProxy.prototype._buildInvalidationRegexesMap = function(invalidateOnRegex) {
+
+    this._regexesMap = new Object();
+    if(typeof(invalidateOnRegex)==='undefined' || !invalidateOnRegex) {
+        // nothing to do...
+
+    } else {
+
+        this._invalidateOnRegexConfig = invalidateOnRegex;
+
+        // build the _regexesMap from the config
+        if (Object.keys(this._invalidateOnRegexConfig).length > 0) {
+
+            var anyRegexes = this._invalidateOnRegexConfig['any'];
+            var stdoutRegexes = this._invalidateOnRegexConfig['stdout'];
+            var stderrRegexes = this._invalidateOnRegexConfig['stderr'];
+
+            // where we will actually hold the parsed regexes
+            var regexpsForStdout = []; // stdout + any
+            var regexpsForStderr = []; // stderr + any
+
+            this._regexesMap['stdout'] = regexpsForStdout;
+            this._regexesMap['stderr'] = regexpsForStderr;
+
+            this._parseRegexes(anyRegexes,[regexpsForStdout,regexpsForStderr]);
+            this._parseRegexes(stdoutRegexes,[regexpsForStdout]);
+            this._parseRegexes(stderrRegexes,[regexpsForStderr]);
+        }
+    }
+}
+
+// internal method to process the constructor's autoInvalidationConfig param
+ProcessProxy.prototype._buildAutoInvalidationConfig = function(autoInvalidationConfig) {
+
+    this._autoInvalidationConfig = null;
+    if(typeof(autoInvalidationConfig)==='undefined' || !autoInvalidationConfig) {
+        // nothing to do...
+
+    } else {
+        this._autoInvalidationConfig = autoInvalidationConfig;
+
+        // for each command conf, we need to parse and convert all
+        // of the configured string regexes into Regexp objects
+        for (var i=0; i<this._autoInvalidationConfig.commands.length; i++) {
+
+            var cmdConf = this._autoInvalidationConfig.commands[i];
+
+            // this is optional...
+            if (typeof(cmdConf.regexes)!=='undefined') {
+
+                this._parseRegexConfigs(cmdConf.regexes['any']);
+                this._parseRegexConfigs(cmdConf.regexes['stdout']);
+                this._parseRegexConfigs(cmdConf.regexes['stderr']);
+            }
+
+        }
+
+    }
+}
 
 
 /**
@@ -191,6 +284,37 @@ ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendT
                 this._log('error',"Error parsing invalidation regex: "
                     + regexStr + " err:"+exception);
             }
+        }
+    }
+}
+
+/**
+* Parses a set of regexConfig objects in the format {regex:pattern] and
+* converts the String regular expressions into RegExp objects.
+*
+* Those that cannot be parsed will be deleted (the regex property deleted)
+*
+* @param regexConfigsToConvert
+**/
+ProcessProxy.prototype._parseRegexConfigs = function(regexConfigsToConvert) {
+
+    if (!regexConfigsToConvert) {
+        return;
+    }
+
+    for (var j=0; j<regexConfigsToConvert.length; j++) {
+
+        var regexConf = regexConfigsToConvert[j];
+
+        try {
+            regexConf.regexStr = regexConf.regex; // retain as string
+            var parsed = new RegExp(regexConf.regex);
+            regexConf.regex = parsed; // replace as obj
+
+        } catch(exception) {
+            delete regexConf.regex;
+            this._log('error',"Error parsing regex: "
+                + regexStr + " err:"+exception);
         }
     }
 }
@@ -265,6 +389,30 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
             }
         }
     }
+}
+
+/**
+* _commandIsBlacklisted(command)
+*
+* Checks to see if current command matches any of the command
+* blacklist regexes
+*
+* Returns true if the command is blacklisted due to a match, false on no matches
+*/
+ProcessProxy.prototype._commandIsBlacklisted = function(command) {
+
+    for (var i=0; i<this._cmdBlacklistRegexes.length; i++) {
+        var regexp = this._cmdBlacklistRegexes[i];
+        var result = regexp.exec(command);
+
+        if (result) {
+            this._log('error',"ProcessProxy: command matches blacklist regex: "
+                + regexp.toString() + " command: " + command);
+            return true; // exit!
+        }
+    }
+
+    return false;
 }
 
 
@@ -419,18 +567,28 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
                 self.executeCommands(initCommands)
 
-                .then(function(cmdResults) {
-                    fulfill(cmdResults); // invoke when done!
+                    .then(function(cmdResults) {
 
-                }).catch(function(exception) {
-                    self._log('error',"initialize - initCommands, " +
-                    "exception thrown: " + exception);
-                    reject(exception);
-                });
+                        // init auto invalidation
+                        self._initAutoInvalidation();
+
+                        fulfill(cmdResults); // invoke when done!
+
+                    }).catch(function(exception) {
+                        self._log('error',"initialize - initCommands, " +
+                            "exception thrown: " + exception);
+                        this._isValid = false; // set ourself int invalid
+                        reject(exception);
+                    });
 
 
-                // we are done, no init commands to run...
+            // we are done, no init commands to run...
             } else {
+
+                // init auto invalidation
+                self._initAutoInvalidation();
+
+                // we are done
                 fulfill(null);
             }
 
@@ -444,6 +602,112 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
 
 };
+
+
+/**
+* If autoInvalidationConfig was provided to the constructor
+* here we setup the code that will run on the checkIntervalMS
+*/
+ProcessProxy.prototype._initAutoInvalidation = function() {
+    if (this._autoInvalidationConfig) {
+
+        this._log('info','Configuring auto-invalidation to run every '
+            + this._autoInvalidationConfig.checkIntervalMS + "ms");
+
+        var self = this;
+
+        // the below will run on an interval
+        setInterval(function() {
+
+            // #1 build list of commands
+            var commandsToExec = [];
+            for(var i=0; i<self._autoInvalidationConfig.commands.length; i++) {
+                var commandConfig = self._autoInvalidationConfig.commands[i];
+                commandsToExec.push(commandConfig.command);
+            }
+
+            // #2 execute it
+            self.executeCommands(commandsToExec)
+
+                // #3 evaluate all results
+                .then(function(cmdResults) {
+
+                    // for each cmdResult evaluate the result against
+                    // the corresponding commandConfig (they will be in
+                    // the same order)
+                    for (var i=0; i<cmdResults.length; i++) {
+
+                        var cmdResult = cmdResults[i];
+                        var cmdConfig = self._autoInvalidationConfig.commands[i];
+
+                        if (!cmdConfig.hasOwnProperty('regexes')) {
+                            continue;
+                        }
+
+                        if (self._evalRegexConfigs(cmdConfig.regexes['any'],cmdResult.stdout) ||
+                            self._evalRegexConfigs(cmdConfig.regexes['any'],cmdResult.stderr) ||
+                            self._evalRegexConfigs(cmdConfig.regexes['stdout'],cmdResult.stdout) ||
+                            self._evalRegexConfigs(cmdConfig.regexes['stderr'],cmdResult.stderr)) {
+
+                            self._log('warn','auto-invalidation determined '+
+                                ' this ProcessProxy is invalid due to results' +
+                                ' of command ['+cmdResult.command+'], see previous logs');
+
+                            self._isValid = false;
+                            break; // exit
+                        }
+
+                    }
+
+                // handle any general execution error...
+                }).catch(function(exception) {
+                    self._log('error','Error in auto-invalidation interval run: '+
+                        exception + ' ' + excetion.stack);
+                });
+
+        },this._autoInvalidationConfig.checkIntervalMS);
+    }
+}
+
+/**
+* Used by the interval function defined in _initAutoInvalidation() to
+* evaluate an array of regexConfs against the 'dataToEval' string
+* where a regexConf looks like
+*
+* {regex:'regex1', invalidOn:'match | noMatch'}
+*
+* returns TRUE or FALSE if any of the regex confs match the content
+* according to their config described above.
+*
+*/
+ProcessProxy.prototype._evalRegexConfigs = function(regexConfs, dataToEval) {
+
+    // null? then false
+    if (!regexConfs) {
+        return false;
+    }
+
+    for (var i=0; i<regexConfs.length; i++) {
+        var regexConf = regexConfs[i];
+
+        if (regexConf.hasOwnProperty('regex')) {
+            var matches = regexConf.regex.exec(dataToEval);
+
+            if (matches && regexConf.invalidOn == 'match' ||
+                !matches && regexConf.invalidOn == 'noMatch') {
+
+                this._log('warn','auto-invalidation determined'+
+                    ' command output ['+dataToEval+'] invalid using '+
+                    'regex['+regexConf.regex+'] regexConf.invalidOn:'
+                    +regexConf.invalidOn);
+
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 
 /**
 * executeCommand - takes a raw command statement and returns a promise
@@ -493,6 +757,16 @@ ProcessProxy.prototype.executeCommands = function(commands) {
     return new Promise(function(fulfill, reject) {
 
         try {
+
+            // scan for blacklisted, and fail fast
+            for (var i=0; i<commands.length; i++) {
+                var cmd = commands[i];
+                if (self._commandIsBlacklisted(cmd)) {
+                    reject(new Error("Command cannot be executed as it matches a " +
+                        "blacklist regex pattern, see logs: command: " + cmd));
+                    return; // exit!
+                }
+            }
 
             var cmdResults = [];
 
@@ -609,7 +883,9 @@ ProcessProxy.prototype.getStatus = function() {
         'options':this._processOptions,
         'isValid':this._isValid,
         'createdAt':(this._createdAt ? this._createdAt.toISOString() : null),
+        'cmdBlacklistRegexes':this._cmdBlacklistRegexes,
         'invalidateOnRegexConfig':this._invalidateOnRegexConfig,
+        'autoInvalidationConfig':this._autoInvalidationConfig,
         'activeCommandStack':[],
         'commandHistory':[]
     };

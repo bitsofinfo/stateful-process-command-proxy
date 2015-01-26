@@ -36,6 +36,13 @@ var Promise = require('promise');
                                          'stderr' : ['regex1', ....]
                                          }
 
+   processCmdBlacklistRegex: optional config array regex patterns who if match the
+                             command requested to be executed will be rejected
+                             with an error
+
+                                     [ 'regex1', 'regex2'...]
+
+
     processCwd:    optional current working directory for the processes to be spawned
 
     processEnvMap: optional hash/object of key-value pairs for environment variables
@@ -60,6 +67,42 @@ var Promise = require('promise');
                        process is valid or not, at a minimum this should call
                        ProcessProxy.isValid(). If the function is not provided
                        the default behavior is to only check ProcessProxy.isValid()
+
+
+    autoInvalidationConfig optional configuration that will run the specified
+                           commands in the background on the given interval,
+                           and if the given regexes match/do-not-match for each command the
+                           ProcessProxy will be flagged as invalid and return FALSE
+                           on calls to isValid(). The commands will be run in
+                           order sequentially via executeCommands()
+
+        {
+           checkIntervalMS: 30000; // check every 30s
+           commands:
+              [
+               { command:'cmd1toRun',
+
+                 // OPTIONAL: because you can configure multiple commands
+                 // where the first ones doe some prep, then the last one's
+                 // output needs to be evaluated hence 'regexes'  may not
+                 // always be present, (but your LAST command must have a
+                 // regexes config to eval prior work, otherwise whats the point
+
+                 regexes: {
+
+                        // at least one key must be specified
+                        // 'any' means either stdout or stderr
+                        // for each regex, the 'on' property dictates
+                        // if the process will be flagged invalid based
+                        // on the results of the regex evaluation
+
+                       'any' :    [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
+                       'stdout' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
+                       'stderr' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....]
+                  }
+              },...
+            ]
+       }
 
 *
 **/
@@ -91,7 +134,9 @@ function StatefulProcessCommandProxy(config) {
                                                 config.processEnvMap,
                                                 config.processUid,
                                                 config.processGid,
-                                                config.logFunction);
+                                                config.logFunction,
+                                                config.processCmdBlacklistRegex,
+                                                config.autoInvalidationConfig);
 
 
                 // initialize
@@ -177,6 +222,7 @@ function StatefulProcessCommandProxy(config) {
 
 }
 
+
 StatefulProcessCommandProxy.prototype._log = function(severity,msg) {
     this._log2(severity,this.__proto__.constructor.name,msg);
 }
@@ -242,28 +288,29 @@ StatefulProcessCommandProxy.prototype.executeCommand = function(command) {
 
             if (error) {
                 self._log('error', "executeCommand[" +
-                    command + "]: error in acquire: " + error);
+                    command + "]: error in acquire: " + error +
+                    ' ' + error.stack);
 
             } else {
 
                 try {
                     processProxy.executeCommand(command)
 
-                    .then(function(cmdResult) {
+                        .then(function(cmdResult) {
 
-                        try {
-                            fulfill(cmdResult);
+                            try {
+                                fulfill(cmdResult);
 
-                        } finally {
+                            } finally {
+                                self._pool.release(processProxy);
+                            }
+
+                        }).catch(function(error) {
+                            self._log('error',"executeCommand: [" +
+                                            command + "] error: " + error);
                             self._pool.release(processProxy);
-                        }
-
-                    }).catch(function(error) {
-                        self._log('error',"executeCommand: [" +
-                                        command + "] error: " + e);
-                        self._pool.release(processProxy);
-                        reject(error);
-                    });
+                            reject(error);
+                        });
 
                 } catch (e) {
                     self._log('error',"executeCommand[" +
@@ -303,7 +350,7 @@ StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
 
             if (error) {
                 self._log('error',"executeCommands: " +
-                    "error in acquire: " + error);
+                    "error in acquire: " + error + ' ' + error.stack);
 
             } else {
 
