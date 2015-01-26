@@ -11,6 +11,7 @@ It is important to note, that despite the use-case described below for this proj
 * [Usage](#usage)
 * [Example](#example)
 * [Security](#security)
+* [Related Tools](#related)
 
 ###<a id="Origin"></a> Origin 
 
@@ -210,3 +211,8 @@ Obviously this module can expose you to some insecure situations depending on ho
 * Never expose calls to this module directly, instead you should write a wrapper layer around StatefulProcessCommandProxy that protects, analyzes and sanitizes external input that can materialize in a `command` statement. 
 * All commands you pass to `execute` should be sanitized to protect from injection attacks
   
+###<a id="related"></a> Related Tools
+
+Have a look at these related projects which build on top of this module to provide some higher level functionality
+
+* https://github.com/bitsofinfo/powershell-command-executor - Introduces a higher level "registry" of powershell commands which can be generated, have arguments applied to them (and sanitized), then executed. 
