@@ -53,57 +53,91 @@ v1.0-beta.1 - 2014-01-17
 To use StatefulProcessCommandProxy the constructor takes one parameter which is a configuration object who's properties are described below. Please refer to the example (following) and the unit-test for more details.
 
 ```
-    name:  The name of this instance, arbitrary
-
-    max: maximum number of processes to maintain
-
-    min: minimum number of processes to maintain
-
-    idleTimeoutMS: idle in milliseconds by which a process will be destroyed
-
+    name:           The name of this instance, arbitrary
+    
+    max:               maximum number of processes to maintain
+    
+    min:               minimum number of processes to maintain
+    
+    idleTimeoutMS:     idle in milliseconds by which a process will be destroyed
+    
     processCommand: full path to the actual process to be spawned (i.e. /bin/bash)
-
+    
     processArgs:    arguments to pass to the process command
-
-    processRetainMaxCmdHistory: default 0, for each process spawned, the maximum number
+    
+    processRetainMaxCmdHistory: for each process spawned, the maximum number
                                 of command history objects to retain in memory
-                                (useful for debugging via the getStatus() method)
-
+                                (useful for debugging), default 0
+                                
     processInvalidateOnRegex: optional config of regex patterns who if match
                               their respective type, will flag the process as invalid
-
                                           {
                                          'any' : ['regex1', ....],
                                          'stdout' : ['regex1', ....],
                                          'stderr' : ['regex1', ....]
                                          }
-
+                                         
+   processCmdBlacklistRegex: optional config array regex patterns who if match the
+                             command requested to be executed will be rejected
+                             with an error
+                                     [ 'regex1', 'regex2'...]
+                                     
     processCwd:    optional current working directory for the processes to be spawned
-
+    
     processEnvMap: optional hash/object of key-value pairs for environment variables
                    to set for the spawned processes
-
+                   
     processUid:    optional uid to launch the processes as
-
+    
     processGid:    optional gid to launch the processes as
-
+    
     logFunction:    optional function that should have the signature
                     (severity,origin,message), where log messages will
                     be sent to. If null, logs will just go to console
-
+                    
     initCommands:   optional array of actual commands to execute on each newly
                     spawned ProcessProxy in the pool before it is made available
-
+                    
     preDestroyCommands: optional array of actual commands to execute on a process
                         before it is killed/destroyed on shutdown or being invalid
-
+                        
     validateFunction:  optional function that should have the signature to accept
                        a ProcessProxy object, and should return true/false if the
                        process is valid or not, at a minimum this should call
                        ProcessProxy.isValid(). If the function is not provided
                        the default behavior is to only check ProcessProxy.isValid()
-                       which is sufficient for most use cases if 'processInvalidateOnRegex'
-                       is properly configured
+                       
+    autoInvalidationConfig optional configuration that will run the specified
+                           commands in the background on the given interval,
+                           and if the given regexes match/do-not-match for each command the
+                           ProcessProxy will be flagged as invalid and return FALSE
+                           on calls to isValid(). The commands will be run in
+                           order sequentially via executeCommands()
+        {
+           checkIntervalMS: 30000; // check every 30s
+           commands:
+              [
+               { command:'cmd1toRun',
+               
+                 // OPTIONAL: because you can configure multiple commands
+                 // where the first ones doe some prep, then the last one's
+                 // output needs to be evaluated hence 'regexes'  may not
+                 // always be present, (but your LAST command must have a
+                 // regexes config to eval prior work, otherwise whats the point
+                 
+                 regexes: {
+                        // at least one key must be specified
+                        // 'any' means either stdout or stderr
+                        // for each regex, the 'on' property dictates
+                        // if the process will be flagged invalid based
+                        // on the results of the regex evaluation
+                       'any' :    [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
+                       'stdout' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
+                       'stderr' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....]
+                  }
+              },...
+            ]
+       }
 ```
 
 Its highly recommended you check out the unit-tests for some examples in addition to the below:
