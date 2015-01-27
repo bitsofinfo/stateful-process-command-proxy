@@ -1,7 +1,7 @@
 {
     "name":"stateful-process-command-proxy",
-    "version":"1.0.0-beta.3",
-    "description":"Module for executing os commands against a pool of stateful child processes such as bash or powershell via stdout and stderr streams",
+    "version":"1.0.0-beta.4",
+    "description":"Module for executing commands in shells (bash or powershell etc) against a pool of stateful child processes such as bash or powershell via stdout and stderr streams",
     "main":"statefulProcessCommandProxy.js",
     "directories":{
         "test":"test"
@@ -12,7 +12,6 @@
     "keywords":[
         "command",
         "process",
-        "os",
         "dos",
         "unix",
         "commandline",

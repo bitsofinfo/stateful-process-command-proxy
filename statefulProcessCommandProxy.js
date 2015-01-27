@@ -148,11 +148,11 @@ function StatefulProcessCommandProxy(config) {
                     callback(null, processProxy);
 
                 }).catch(function(exception) {
-                    self._log('error',"new process initialize threw error: " + exception);
+                    self._log('error',"new process initialize threw error: " + exception + ' ' + exception.stack);
                 });
 
             } catch (exception) {
-                self._log('error',"create: exception: " + exception);
+                self._log('error',"create: exception: " + exception + ' ' + exception.stack);
                 callback(exception, null);
             }
         },
@@ -253,7 +253,7 @@ StatefulProcessCommandProxy.prototype.getStatus = function() {
 
         } catch(exception) {
             self._log('error', "getStatus[process:" +
-                processProxy.getPid() + "]: error: " + e);
+                processProxy.getPid() + "]: error: " + exception);
         }
     }
 
@@ -357,21 +357,21 @@ StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
                 try {
                     processProxy.executeCommands(commands)
 
-                    .then(function(cmdResults) {
+                        .then(function(cmdResults) {
 
-                        try {
-                            fulfill(cmdResults);
+                            try {
+                                fulfill(cmdResults);
 
-                        } finally {
+                            } finally {
+                                self._pool.release(processProxy);
+                            }
+
+                        }).catch(function(error) {
+                            self._log('error',"executeCommands: [" +
+                                commands + "] error: " + error);
                             self._pool.release(processProxy);
-                        }
-
-                    }).catch(function(error) {
-                        self._log('error',"executeCommands: [" +
-                            commands + "] error: " + e);
-                        self._pool.release(processProxy);
-                        reject(error);
-                    });
+                            reject(error);
+                        });
 
                 } catch (e) {
                     self._log('error',"executeCommands: error: " + e);

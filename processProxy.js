@@ -282,7 +282,7 @@ ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendT
 
             } catch(exception) {
                 this._log('error',"Error parsing invalidation regex: "
-                    + regexStr + " err:"+exception);
+                    + regexStr + " err:"+exception + ' ' + exception.stack);
             }
         }
     }
@@ -314,7 +314,7 @@ ProcessProxy.prototype._parseRegexConfigs = function(regexConfigsToConvert) {
         } catch(exception) {
             delete regexConf.regex;
             this._log('error',"Error parsing regex: "
-                + regexStr + " err:"+exception);
+                + regexStr + " err:"+exception + ' ' + exception.stack);
         }
     }
 }
@@ -520,6 +520,10 @@ ProcessProxy.prototype.onData = function(type, data) {
 *
 * initCommands - array of commands to execute after the process
 *                is successfully spawned.
+*
+* Returns a promise
+*  - on fulfill the cmdResults from any initialize comamnds, otherwise fulfill(null)
+*  - on reject, an Error object
 **/
 ProcessProxy.prototype.initialize = function(initCommands) {
 
@@ -554,6 +558,7 @@ ProcessProxy.prototype.initialize = function(initCommands) {
             // register error handler
             self._process.on('error', function(err) {
                 self._log('error','child process received error ' + err);
+                self._isValid = false; // set us to invalid
             });
 
             // register exit handler
@@ -594,7 +599,8 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
 
         } catch (exception) {
-            self._log('error',"initialize, exception thrown: " + exception);
+            self._log('error',"initialize, exception thrown: "
+                + exception + ' ' + exception.stack);
             reject(exception);
         }
 
@@ -712,7 +718,7 @@ ProcessProxy.prototype._evalRegexConfigs = function(regexConfs, dataToEval) {
 /**
 * executeCommand - takes a raw command statement and returns a promise
 *                  which fulfills/returns {command:cmd, stdout:xxxx, stderr:xxxxx}
-*                  on reject gives an exception
+*                  on reject give an Error object
 *
 **/
 ProcessProxy.prototype.executeCommand = function(command) {
@@ -747,7 +753,8 @@ ProcessProxy.prototype.executeCommand = function(command) {
 * @commands Array of raw command/shell statements to be executed
 *
 * @return Promise, on fulfill returns promise to be fulfilled with a
-*                  array of command results as described above
+*                  array of command results as described above, on reject
+*                  and Error object
 *
 **/
 ProcessProxy.prototype.executeCommands = function(commands) {
@@ -816,7 +823,8 @@ ProcessProxy.prototype.executeCommands = function(commands) {
 *              underlying child process being proxied WILL be KILLED.
 *
 * shutdownCommands - optional array of commands to execute before the process
-*                is attempted to be shutdown.
+*                   is attempted to be shutdown. On fulfill will return cmdResults
+*                   of all destroy commands (if configured), on reject and Error
 **/
 ProcessProxy.prototype.shutdown = function(shutdownCommands) {
 
