@@ -27,7 +27,7 @@ var configs = {
                 { 'command': '$INVALIDATION_VAR="iShouldSetupInvalidation"'},
                 { 'command': 'echo $INVALIDATION_VAR',
                   'regexes': {
-                    'any' : [ {'regex':'.*Invalid.*', 'invalidOn':'match'}]
+                    'any' : [ {'regex':'.*Invalid.*', 'flags':'i', 'invalidOn':'match'}]
                   }
                 }
             ]
@@ -58,7 +58,7 @@ var configs = {
                 { 'command': 'INVALIDATION_VAR=iShouldSetupInvalidation'},
                 { 'command': 'echo $INVALIDATION_VAR',
                   'regexes': {
-                    'any' : [ {'regex':'.*Invalid.*', 'invalidOn':'match'}]
+                    'any' : [ {'regex':'.*Invalid.*', 'flags':'i', 'invalidOn':'match'}]
                   }
                 }
             ]
@@ -115,12 +115,12 @@ var getStatefulProcessCommandProxyForTests = function(config,max,min,setAutoVali
 
             processRetainMaxCmdHistory : 10,
             processInvalidateOnRegex : {
-                'any':['.*nomatch.*'],
-                'stdout':['.*nomatch.*'],
-                'stderr':['.*nomatch.*']
+                'any':[{'regex':'.*nomatch.*'}],
+                'stdout':[{'regex':'.*nomatch.*'}],
+                'stderr':[{'regex':'.*nomatch.*', 'flags':'i'}]
             },
 
-            processCmdBlacklistRegex: ['.*blacklisted.*'],
+            processCmdBlacklistRegex: [ {'regex':'.*blacklisted.*'} ],
 
             processCwd : null,
             processEnvMap : {"testenvvar":"value1"},

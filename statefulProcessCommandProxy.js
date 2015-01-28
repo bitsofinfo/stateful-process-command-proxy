@@ -31,16 +31,17 @@ var Promise = require('promise');
                               their respective type, will flag the process as invalid
 
                                           {
-                                         'any' : ['regex1', ....],
-                                         'stdout' : ['regex1', ....],
-                                         'stderr' : ['regex1', ....]
+                                         'any' :    [ {regex:'regex1',flags:'ig'}, ....],
+                                         'stdout' : [ {regex:'regex1',flags:'ig'}, ....],
+                                         'stderr' : [ {regex:'regex1',flags:'ig'}, ....]
                                          }
 
    processCmdBlacklistRegex: optional config array regex patterns who if match the
                              command requested to be executed will be rejected
                              with an error
 
-                                     [ 'regex1', 'regex2'...]
+                                     [ {regex:'regex1',flags:'ig'},
+                                       {regex:'regex2',flags:'m'}...]
 
 
     processCwd:    optional current working directory for the processes to be spawned
@@ -96,9 +97,9 @@ var Promise = require('promise');
                         // if the process will be flagged invalid based
                         // on the results of the regex evaluation
 
-                       'any' :    [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
-                       'stdout' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
-                       'stderr' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....]
+                       'any' :    [ {regex:'regex1', flags:'im', invalidOn:'match | noMatch'}, ....],
+                       'stdout' : [ {regex:'regex1', flags:'g', invalidOn:'match | noMatch'}, ....],
+                       'stderr' : [ {regex:'regex1', flags:'i', invalidOn:'match | noMatch'}, ....]
                   }
               },...
             ]

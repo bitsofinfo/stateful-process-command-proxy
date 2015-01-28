@@ -43,9 +43,9 @@ fifo.prototype.toArray = function () {
 * @param invalidateOnRegex optional regex pattern config object in the format:
 *
 *                           {
-*                           'any' : ['regex1', ....],
-*                           'stdout' : ['regex1', ....],
-*                           'stderr' : ['regex1', ....]
+*                           'any' :    [ {regex:'regex1',flags:'ig'}, ....],
+*                           'stdout' : [ {regex:'regex1',flags:'ig'}, ....],
+*                           'stderr' : [ {regex:'regex1',flags:'m'}, ....]
 *                           }
 *
 *                          where on Command.finish() if the regex matches the
@@ -68,7 +68,8 @@ fifo.prototype.toArray = function () {
 *                                command requested to be executed will be rejected
 *                                with an error.
 *
-*                                [ 'regex1', 'regex2'...]
+*                                [ '{regex:'regex1',flags:'ig'},
+*                                   {regex:'regex2',flags:'m'}...]
 *
 *
 * @param autoInvalidationConfig optional configuration that will run the specified
@@ -96,9 +97,9 @@ fifo.prototype.toArray = function () {
 *                         // for each regex, the 'on' property dictates
 *                         // if the process will be flagged invalid based
 *                         // on the results of the regex evaluation
-*                        'any' :    [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
-*                        'stdout' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....],
-*                        'stderr' : [ {regex:'regex1', invalidOn:'match | noMatch'}, ....]
+*                        'any' :    [ {regex:'regex1', flags:'i', invalidOn:'match | noMatch'}, ....],
+*                        'stdout' : [ {regex:'regex1', flags:'i', invalidOn:'match | noMatch'}, ....],
+*                        'stderr' : [ {regex:'regex1', flags:'i', invalidOn:'match | noMatch'}, ....]
 *                   }
 *               },...
 *             ]
@@ -221,7 +222,6 @@ ProcessProxy.prototype._buildAutoInvalidationConfig = function(autoInvalidationC
 
             // this is optional...
             if (typeof(cmdConf.regexes)!=='undefined') {
-
                 this._parseRegexConfigs(cmdConf.regexes['any']);
                 this._parseRegexConfigs(cmdConf.regexes['stdout']);
                 this._parseRegexConfigs(cmdConf.regexes['stderr']);
@@ -273,16 +273,23 @@ ProcessProxy.prototype._parseRegexes = function(regexesToParse, regexpsToAppendT
         // parse all 'any' regexes to RegExp objects
         for (var i=0; i<regexesToParse.length; i++) {
 
-            var regexStr = regexesToParse[i];
+            var regexConf = regexesToParse[i];
             try {
-                var parsed = new RegExp(regexStr);
+                var parsed = null;
+
+                if (typeof(regexConf.flags) != 'undefined') {
+                    parsed = new RegExp(regexConf.regex,regexConf.flags);
+                } else {
+                    parsed = new RegExp(regexConf.regex);
+                }
+
                 for (var j=0; j<regexpsToAppendTo.length; j++) {
                     regexpsToAppendTo[j].push(parsed);
                 }
 
             } catch(exception) {
                 this._log('error',"Error parsing invalidation regex: "
-                    + regexStr + " err:"+exception + ' ' + exception.stack);
+                    + JSON.stringify(regexConf) + " err:"+exception + ' ' + exception.stack);
             }
         }
     }
@@ -307,14 +314,19 @@ ProcessProxy.prototype._parseRegexConfigs = function(regexConfigsToConvert) {
         var regexConf = regexConfigsToConvert[j];
 
         try {
-            regexConf.regexStr = regexConf.regex; // retain as string
-            var parsed = new RegExp(regexConf.regex);
-            regexConf.regex = parsed; // replace as obj
+
+            if (typeof(regexConf.flags) != 'undefined') {
+              console.log(regexConf.regex);
+                parsed = new RegExp(regexConf.regex,regexConf.flags);
+            } else {
+                parsed = new RegExp(regexConf.regex);
+            }
+
+            regexConf.regExpObj = parsed; // set as obj
 
         } catch(exception) {
-            delete regexConf.regex;
             this._log('error',"Error parsing regex: "
-                + regexStr + " err:"+exception + ' ' + exception.stack);
+                + JSON.stringify(regexConf) + " err:"+exception + ' ' + exception.stack);
         }
     }
 }
@@ -696,8 +708,8 @@ ProcessProxy.prototype._evalRegexConfigs = function(regexConfs, dataToEval) {
     for (var i=0; i<regexConfs.length; i++) {
         var regexConf = regexConfs[i];
 
-        if (regexConf.hasOwnProperty('regex')) {
-            var matches = regexConf.regex.exec(dataToEval);
+        if (regexConf.hasOwnProperty('regExpObj')) {
+            var matches = regexConf.regExpObj.exec(dataToEval);
 
             if (matches && regexConf.invalidOn == 'match' ||
                 !matches && regexConf.invalidOn == 'noMatch') {
