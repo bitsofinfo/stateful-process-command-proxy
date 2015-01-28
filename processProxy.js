@@ -129,8 +129,9 @@ function ProcessProxy(processToSpawn, arguments,
     }
 
 
-    this._cmdBlacklistRegexes = [];
-    if (typeof(processCmdBlacklistRegex)=='undefined') {
+    this._cmdBlacklistRegexes = []; // holds RegExp objs
+    this._cmdBlacklistRegexesConfs = processCmdBlacklistRegex; // retains orig configs
+    if (typeof(processCmdBlacklistRegex) == 'undefined') {
         // nothing to do
     } else {
         // parse them
@@ -316,7 +317,6 @@ ProcessProxy.prototype._parseRegexConfigs = function(regexConfigsToConvert) {
         try {
 
             if (typeof(regexConf.flags) != 'undefined') {
-              console.log(regexConf.regex);
                 parsed = new RegExp(regexConf.regex,regexConf.flags);
             } else {
                 parsed = new RegExp(regexConf.regex);
@@ -412,7 +412,6 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
 * Returns true if the command is blacklisted due to a match, false on no matches
 */
 ProcessProxy.prototype._commandIsBlacklisted = function(command) {
-
     for (var i=0; i<this._cmdBlacklistRegexes.length; i++) {
         var regexp = this._cmdBlacklistRegexes[i];
         var result = regexp.exec(command);
@@ -903,7 +902,7 @@ ProcessProxy.prototype.getStatus = function() {
         'options':this._processOptions,
         'isValid':this._isValid,
         'createdAt':(this._createdAt ? this._createdAt.toISOString() : null),
-        'cmdBlacklistRegexes':this._cmdBlacklistRegexes,
+        'cmdBlacklistRegexes':this._cmdBlacklistRegexesConfs,
         'invalidateOnRegexConfig':this._invalidateOnRegexConfig,
         'autoInvalidationConfig':this._autoInvalidationConfig,
         'activeCommandStack':[],
