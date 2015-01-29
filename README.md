@@ -41,6 +41,9 @@ mocha test/all.js
 ###<a id="history"></a> History
 
 ```
+v1.0-beta.5 - 2014-01-28
+    - whitelisting fix
+
 v1.0-beta.4 - 2014-01-28
     - New options for command whitelist regex matching
       Note new parameter order in ProcessProxy constructor!
