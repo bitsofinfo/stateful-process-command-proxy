@@ -43,6 +43,13 @@ var Promise = require('promise');
                                      [ {regex:'regex1',flags:'ig'},
                                        {regex:'regex2',flags:'m'}...]
 
+  processCmdWhitelistRegex: optional config array regex patterns who if do not match
+                             the command requested it will be rejected
+                             with an error
+
+                             [ {regex:'regex1',flags:'ig'},
+                               {regex:'regex2',flags:'m'}...]
+
 
     processCwd:    optional current working directory for the processes to be spawned
 
@@ -137,6 +144,7 @@ function StatefulProcessCommandProxy(config) {
                                                 config.processGid,
                                                 config.logFunction,
                                                 config.processCmdBlacklistRegex,
+                                                config.processCmdWhitelistRegex,
                                                 config.autoInvalidationConfig);
 
 

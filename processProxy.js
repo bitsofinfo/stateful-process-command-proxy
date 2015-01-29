@@ -66,7 +66,16 @@ fifo.prototype.toArray = function () {
 *
 * @param processCmdBlacklistRegex optional config array regex patterns who if match the
 *                                command requested to be executed will be rejected
-*                                with an error.
+*                                with an error. Blacklisted commands are checked
+*                                before whitelisted commands below
+*
+*                                [ '{regex:'regex1',flags:'ig'},
+*                                   {regex:'regex2',flags:'m'}...]
+*
+* @param processCmdWhitelistRegex optional config array regex patterns who must match
+*                                 the command requested to be executed otherwise
+*                                 will be rejected with an error. Whitelisted commands
+*                                 are checked AFTER blacklisted commands above...
 *
 *                                [ '{regex:'regex1',flags:'ig'},
 *                                   {regex:'regex2',flags:'m'}...]
@@ -106,11 +115,13 @@ fifo.prototype.toArray = function () {
 *        }
 *
 *
+*
 */
 function ProcessProxy(processToSpawn, arguments,
                       retainMaxCmdHistory, invalidateOnRegex,
                       cwd, envMap, uid, gid, logFunction,
                       processCmdBlacklistRegex,
+                      processCmdWhitelistRegex,
                       autoInvalidationConfig) {
 
     this._createdAt = new Date();
@@ -136,6 +147,15 @@ function ProcessProxy(processToSpawn, arguments,
     } else {
         // parse them
         this._parseRegexes(processCmdBlacklistRegex,[this._cmdBlacklistRegexes]);
+    }
+
+    this._cmdWhitelistRegexes = []; // holds RegExp objs
+    this._cmdWhitelistRegexesConfs = processCmdWhitelistRegex; // retains orig configs
+    if (typeof(processCmdWhitelistRegex) == 'undefined') {
+      // nothing to do
+    } else {
+      // parse them
+      this._parseRegexes(processCmdWhitelistRegex,[this._cmdWhitelistRegexes]);
     }
 
 
@@ -412,6 +432,13 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
 * Returns true if the command is blacklisted due to a match, false on no matches
 */
 ProcessProxy.prototype._commandIsBlacklisted = function(command) {
+
+    // no blacklist? then its not blacklisted
+    if (this._cmdBlacklistRegexes.length == 0) {
+        return false;
+    }
+
+
     for (var i=0; i<this._cmdBlacklistRegexes.length; i++) {
         var regexp = this._cmdBlacklistRegexes[i];
         var result = regexp.exec(command);
@@ -423,6 +450,35 @@ ProcessProxy.prototype._commandIsBlacklisted = function(command) {
         }
     }
 
+    return false;
+}
+
+/**
+* _commandIsWhitelisted(command)
+*
+* Checks to see if current command matches any of the command
+* whitelist regexes
+*
+* Returns true if the command is whitelisted due to a match, false on no matches
+*/
+ProcessProxy.prototype._commandIsWhitelisted = function(command) {
+
+    // no whitelist? then its whitelisted
+    if (this._cmdWhitelistRegexes.length == 0) {
+      return true;
+    }
+
+    for (var i=0; i<this._cmdWhitelistRegexes.length; i++) {
+      var regexp = this._cmdWhitelistRegexes[i];
+      var result = regexp.exec(command);
+
+      if (result) {
+        return; // exit! command is whitelisted
+      }
+    }
+
+    this._log('error',"ProcessProxy: command does not match any configured " +
+            "whitelist regexes, command: " + command);
     return false;
 }
 
@@ -581,7 +637,7 @@ ProcessProxy.prototype.initialize = function(initCommands) {
             // run all initCommands if provided
             if (initCommands) {
 
-                self.executeCommands(initCommands)
+                self._executeCommands(initCommands,false) // skip black/whitelists
 
                     .then(function(cmdResults) {
 
@@ -769,6 +825,29 @@ ProcessProxy.prototype.executeCommand = function(command) {
 *
 **/
 ProcessProxy.prototype.executeCommands = function(commands) {
+    return this._executeCommands(commands,true);
+}
+
+
+  /**
+  * Internal method only:
+  *
+  * executeCommands - takes an array of raw command strings and returns promise
+  *                  to be fulfilled with a an array of
+  *                  of [
+  *                       {command:cmd1, stdout:xxxx, stderr:xxxxx},
+  *                       {command:cmd2, stdout:xxxx, stderr:xxxxx}
+  *                     ]
+  *
+  * @commands Array of raw command/shell statements to be executed
+  * @enforceBlackWhitelists enforce white and blacklists
+  *
+  * @return Promise, on fulfill returns promise to be fulfilled with a
+  *                  array of command results as described above, on reject
+  *                  and Error object
+  *
+  **/
+  ProcessProxy.prototype._executeCommands = function(commands, enforceBlackWhitelists) {
 
     self = this;
 
@@ -776,15 +855,30 @@ ProcessProxy.prototype.executeCommands = function(commands) {
 
         try {
 
-            // scan for blacklisted, and fail fast
-            for (var i=0; i<commands.length; i++) {
-                var cmd = commands[i];
-                if (self._commandIsBlacklisted(cmd)) {
+            if (enforceBlackWhitelists) {
+
+                // scan for blacklisted, and fail fast
+                for (var i=0; i<commands.length; i++) {
+                  var cmd = commands[i];
+                  if (self._commandIsBlacklisted(cmd)) {
                     reject(new Error("Command cannot be executed as it matches a " +
-                        "blacklist regex pattern, see logs: command: " + cmd));
+                    "blacklist regex pattern, see logs: command: " + cmd));
                     return; // exit!
+                  }
                 }
+
+                // scan for whitelisted, and fail fast
+                for (var i=0; i<commands.length; i++) {
+                  var cmd = commands[i];
+                  if (!self._commandIsWhitelisted(cmd)) {
+                    reject(new Error("Command cannot be executed it does not match " +
+                    "our set of whitelisted commands, see logs: command: " + cmd));
+                    return; // exit!
+                  }
+                }
+
             }
+
 
             var cmdResults = [];
 
@@ -849,7 +943,7 @@ ProcessProxy.prototype.shutdown = function(shutdownCommands) {
             // run all shutdownCommands if provided
             if (shutdownCommands) {
 
-                self.executeCommands(shutdownCommands)
+                self._executeCommands(shutdownCommands,false) // skip black/whitelists
 
                 .then(function(cmdResults) {
 
@@ -902,7 +996,8 @@ ProcessProxy.prototype.getStatus = function() {
         'options':this._processOptions,
         'isValid':this._isValid,
         'createdAt':(this._createdAt ? this._createdAt.toISOString() : null),
-        'cmdBlacklistRegexes':this._cmdBlacklistRegexesConfs,
+        'cmdBlacklistRegexesConfs':this._cmdBlacklistRegexesConfs,
+        'cmdWhitelistRegexesConfs':this._cmdWhitelistRegexesConfs,
         'invalidateOnRegexConfig':this._invalidateOnRegexConfig,
         'autoInvalidationConfig':this._autoInvalidationConfig,
         'activeCommandStack':[],

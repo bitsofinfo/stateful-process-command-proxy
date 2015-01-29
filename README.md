@@ -83,9 +83,17 @@ To use StatefulProcessCommandProxy the constructor takes one parameter which is 
 
    processCmdBlacklistRegex: optional config array regex patterns who if match the
                              command requested to be executed will be rejected
-                             with an error
+                             with an error. Blacklists run before whitelists
+                             
                                      [ {regex:'regex1',flags:'ig'},
                                        {regex:'regex2',flags:'ig'}...]
+
+   processCmdWhitelistRegex: optional config array regex patterns defining commands
+                             that are permitted to execute, if no match, the command
+                             will be rejected. Whitelists run after blacklists
+
+                                       [ {regex:'regex1',flags:'ig'},
+                                         {regex:'regex2',flags:'ig'}...]
 
     processCwd:    optional current working directory for the processes to be spawned
 

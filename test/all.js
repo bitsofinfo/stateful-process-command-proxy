@@ -91,7 +91,9 @@ var doFinalTestRoutine = function(done,statefulProcessCommandProxy) {
 }
 
 
-var getStatefulProcessCommandProxyForTests = function(config,max,min,setAutoValidationConfig) {
+var getStatefulProcessCommandProxyForTests = function(config,max,min,
+                                                       setAutoValidationConfig,
+                                                       setWhitelistConfig) {
 
     var Promise = require('promise');
     var StatefulProcessCommandProxy = require("..");
@@ -121,6 +123,8 @@ var getStatefulProcessCommandProxyForTests = function(config,max,min,setAutoVali
             },
 
             processCmdBlacklistRegex: [ {'regex':'.*blacklisted.*'} ],
+
+            processCmdWhitelistRegex: (setWhitelistConfig ? [ {'regex':'.*whitelisted.*'} ] : null),
 
             processCwd : null,
             processEnvMap : {"testenvvar":"value1"},
@@ -156,7 +160,7 @@ describe('core-test', function() {
         // chose the right config based on platform
         var config = (isWin ? configs['windows'] : configs['nix']);
 
-        var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,1,1,false);
+        var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,1,1,false,false);
 
         // #1 invoke all test commands
         var promise = statefulProcessCommandProxy.executeCommands(Object.keys(config.testCommands));
@@ -198,7 +202,7 @@ describe('blacklist-test', function() {
         // chose the right config based on platform
         var config = (isWin ? configs['windows'] : configs['nix']);
 
-        var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,1,1,false);
+        var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,1,1,false,false);
 
         var promise = statefulProcessCommandProxy.executeCommand("echo 'some blacklisted command'")
 
@@ -226,6 +230,46 @@ describe('blacklist-test', function() {
 
 });
 
+describe('whitelist-test', function() {
+
+  it('Spawn a pool of shells, fail invoking non-whitelisted command, then shutdown', function(done) {
+
+    this.timeout(10000);
+
+    var isWin = /^win/.test(process.platform);
+
+    // chose the right config based on platform
+    var config = (isWin ? configs['windows'] : configs['nix']);
+
+    var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,1,1,false,true);
+
+    var promise = statefulProcessCommandProxy
+                  .executeCommand("echo 'some non-white listed command'")
+
+    // when all commands are executed
+    // lets assert them all
+    promise.then(function(cmdResults) {
+
+      // should NOT get here!
+      assert.equal(true,false);
+
+    }).catch(function(error) {
+
+      // should get here!
+      assert(error.message.indexOf("whitelisted") != -1);
+
+      doFinalTestRoutine(done,statefulProcessCommandProxy);
+
+    }).catch(function(exception) {
+      statefulProcessCommandProxy.shutdown();
+      done(exception);
+    });
+
+
+  });
+
+});
+
 
 describe('auto-invalidation-test', function() {
 
@@ -238,7 +282,7 @@ describe('auto-invalidation-test', function() {
         // chose the right config based on platform
         var config = (isWin ? configs['windows'] : configs['nix']);
 
-        var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,2,2,true);
+        var statefulProcessCommandProxy = getStatefulProcessCommandProxyForTests(config,2,2,true,false);
 
         // do some commands
         statefulProcessCommandProxy.executeCommand("echo 'hello'");
