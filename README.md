@@ -41,6 +41,15 @@ mocha test/all.js
 ###<a id="history"></a> History
 
 ```
+v1.0-beta.4 - 2014-01-28
+    - New options for command whitelist regex matching
+      Note new parameter order in ProcessProxy constructor!
+      
+    - Support for regex flags for all regex based configs
+    
+    - All regex pattern based configurations now must be objects
+      in format {regex:'pattern' [,flags:'img etc']}
+      
 v1.0-beta.3 - 2014-01-26
     - New options for command blacklisting regex matching and interval
       based self auto-invalidation of ProcessProxy instances
