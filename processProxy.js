@@ -700,7 +700,7 @@ ProcessProxy.prototype._initAutoInvalidation = function() {
             }
 
             // #2 execute it
-            self.executeCommands(commandsToExec)
+            self._executeCommands(commandsToExec, false)
 
                 // #3 evaluate all results
                 .then(function(cmdResults) {
