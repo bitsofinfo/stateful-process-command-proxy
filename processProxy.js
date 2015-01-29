@@ -473,7 +473,7 @@ ProcessProxy.prototype._commandIsWhitelisted = function(command) {
       var result = regexp.exec(command);
 
       if (result) {
-        return; // exit! command is whitelisted
+        return true; // exit! command is whitelisted
       }
     }
 
