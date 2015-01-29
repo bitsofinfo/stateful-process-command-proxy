@@ -180,9 +180,9 @@ var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
 
       processInvalidateOnRegex :
           {
-            'any':['.*error.*'],
-            'stdout':['.*error.*'],
-            'stderr':['.*error.*']
+            'any':[{regex:'.*error.*',flags:'ig'}],
+            'stdout':[{regex:'.*error.*',flags:'ig'}],
+            'stderr':[{regex:'.*error.*',flags:'ig'}]
           },
 
       processCwd : './',
