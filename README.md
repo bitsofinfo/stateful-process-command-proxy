@@ -41,6 +41,9 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
+v1.0-beta.6 - 2014-01-30
+    - bug fixes, for auto-invalidation cmds being auto-whitelisted
+    
 v1.0-beta.5 - 2014-01-28
     - whitelisting fix
 
