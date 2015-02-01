@@ -183,7 +183,7 @@ var statefulProcessCommandProxy = new StatefulProcessCommandProxy(
       name: "test",
       max: 2,
       min: 2,
-      idleTimeoutMillis: 10000,
+      idleTimeoutMS: 10000,
 
       logFunction: function(severity,origin,msg) {
           console.log(severity.toUpperCase() + " " +origin+" "+ msg);
