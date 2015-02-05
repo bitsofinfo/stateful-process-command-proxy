@@ -44,10 +44,10 @@ mocha test/all.js
 v1.0-beta.6 - 2014-01-30
     - bug fixes, for auto-invalidation cmds being auto-whitelisted
     
-v1.0-beta.5 - 2014-01-28
+v1.0-beta.5 - 2015-01-28
     - whitelisting fix
 
-v1.0-beta.4 - 2014-01-28
+v1.0-beta.4 - 2015-01-28
     - New options for command whitelist regex matching
       Note new parameter order in ProcessProxy constructor!
       
@@ -56,14 +56,14 @@ v1.0-beta.4 - 2014-01-28
     - All regex pattern based configurations now must be objects
       in format {regex:'pattern' [,flags:'img etc']}
       
-v1.0-beta.3 - 2014-01-26
+v1.0-beta.3 - 2015-01-26
     - New options for command blacklisting regex matching and interval
       based self auto-invalidation of ProcessProxy instances
 
-v1.0-beta.2 - 2014-01-21
+v1.0-beta.2 - 2015-01-21
     - New return types for executeCommands - is now an array
 
-v1.0-beta.1 - 2014-01-17
+v1.0-beta.1 - 2015-01-17
     - Initial version
 ```
 
