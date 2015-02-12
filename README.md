@@ -282,6 +282,7 @@ setTimeout(function() {
 
 Obviously this module can expose you to some insecure situations depending on how you use it... you are providing a gateway to an external process via Node on your host os! (likely a shell in most use-cases). Here are some tips; ultimately its your responsibility to secure your system.
 
+* Read OWASPs article on command injection - https://www.owasp.org/index.php/Command_Injection
 * Ensure that the node process is running as a user with very limited rights
 * Make use of the uid/gid configuration appropriately to further limit the processes
 * Make use of the whitelisted and blacklisted command configuration feature to mitigate your exposure
