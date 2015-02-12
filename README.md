@@ -6,6 +6,7 @@ Node.js module for executing os commands against a pool of stateful, long-lived 
 This node module can be used for proxying long-lived bash process, windows console etc. It works and has been tested on both linux, os-x and windows hosts running the latest version of node.
 
 * [Origin](#origin)
+* [Features](#features)
 * [Install & Tests](#install)
 * [History](#history)
 * [Usage](#usage)
@@ -26,6 +27,16 @@ The diagram below should conceptually give you an idea of what this module does.
 **The local user that the node process runs as should have virtually zero rights! Also be sure to properly configure a restricted UID/GID when instatiating a new instance of this. See security notes below.**
 
 ![Alt text](/diagram.png "Diagram1")
+
+### <a id="features"></a> Features
+
+* Works with any operating system that can run Node.js
+* Tested w/ Bash and Powershell, and should work with virtually any other shell or interactive spawnable process which can be communicated with over STDIN, STDOUT, STDERR streams.
+* Maintains a configurable pool of re-usable processes that are checked out/in when commands need to be executed
+* Command whitelisting and blacklisting
+* Definable list of "init" and "destroy" commands to be run as processes are created/destroyed
+* Definable configuration for "auto-invalidation" of active processes
+* Can be configured to maintain a "history" of commands run against each proxied process, useful for reporting or auditing purposes
 
 ### <a id="install"></a> Install & Tests
 
