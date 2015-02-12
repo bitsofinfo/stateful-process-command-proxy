@@ -1,9 +1,9 @@
 # stateful-process-command-proxy
-Node.js module for executing os commands against a pool of stateful, long-lived child processes such as bash or powershell
+Node.js module for executing os commands against a pool of stateful, long-lived child processes such as bash shells or powershell consoles
 
 [![NPM](https://nodei.co/npm/stateful-process-command-proxy.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/stateful-process-command-proxy/)
 
-It is important to note, that despite the use-case described below for this project's origination, this node module can be used for proxying long-lived bash process (or any shell really) in addition to powershell etc. It works and has been tested on both *nix, osx and windows hosts running the latest version of node.
+This node module can be used for proxying long-lived bash process, windows console etc. It works and has been tested on both linux, os-x and windows hosts running the latest version of node.
 
 * [Origin](#origin)
 * [Install & Tests](#install)
@@ -175,7 +175,7 @@ Its highly recommended you check out the unit-tests for some examples in additio
 
 ### <a id="example"></a> Example
 
-Note this example is for a machine w/ bash in the typical location. Windows (or other) can adjust the below as necessary to run).
+Note this example is for a machine w/ bash in the typical location on *nix machines (i.e. linux or os-x). Windows (or other) can adjust the below as necessary to run their shell of choice, dos/powershell etc).
 
 ```
 var Promise = require('promise');
@@ -273,8 +273,9 @@ Obviously this module can expose you to some insecure situations depending on ho
 
 * Ensure that the node process is running as a user with very limited rights
 * Make use of the uid/gid configuration appropriately to further limit the processes
+* Make use of the whitelisted and blacklisted command configuration feature to mitigate your exposure
 * Never expose calls to this module directly, instead you should write a wrapper layer around StatefulProcessCommandProxy that protects, analyzes and sanitizes external input that can materialize in a `command` statement. For an example of this kind of wrapper w/ sanitization of arguments see https://github.com/bitsofinfo/powershell-command-executor
-* All commands you pass to `execute` should be sanitized to protect from injection attacks
+* All commands you pass to `execute` should be sanitized to protect from injection attacks. The type of sanitization you do is up to you and is obviously different depending on what shell/process type you are mediating access to via this module.
 
 ### <a id="related"></a> Related Tools
 
