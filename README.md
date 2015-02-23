@@ -295,3 +295,4 @@ Have a look at these related projects which build on top of this module to provi
 
 * https://github.com/bitsofinfo/powershell-command-executor - Introduces a higher level "registry" of powershell commands which can be generated, have arguments applied to them (and sanitized), then executed.
 * https://github.com/bitsofinfo/powershell-command-executor-ui - Builds on top of powershell-command-executor to provide a simple Node REST API and AngularJS interface for testing the execution of commands in the registry
+* https://github.com/bitsofinfo/meteor-shell-command-mgr - Small Meteor app that lets you manage/generate a command registry for powershell-command-executor
