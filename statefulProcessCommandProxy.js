@@ -296,9 +296,14 @@ StatefulProcessCommandProxy.prototype.executeCommand = function(command) {
         self._pool.acquire(function(error, processProxy) {
 
             if (error) {
-                self._log('error', "executeCommand[" +
+
+                var errMsg = "executeCommand[" +
                     command + "]: error in acquire: " + error +
-                    ' ' + error.stack);
+                    ' ' + error.stack;
+
+                self._log('error', errMsg);
+
+                reject(new Error(errMsg));
 
             } else {
 
@@ -322,9 +327,15 @@ StatefulProcessCommandProxy.prototype.executeCommand = function(command) {
                         });
 
                 } catch (e) {
-                    self._log('error',"executeCommand[" +
-                        command + "]: error: " + e);
+
+                    var errMsg = "executeCommand[" +
+                        command + "]: error: " + e;
+
+                    self._log('error',errMsg);
+
                     self._pool.release(processProxy);
+
+                    reject(new Error(errMsg));
                 }
 
             }
@@ -358,8 +369,12 @@ StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
         self._pool.acquire(function(error, processProxy) {
 
             if (error) {
-                self._log('error',"executeCommands: " +
-                    "error in acquire: " + error + ' ' + error.stack);
+                var errMsg = "executeCommands: " +
+                    "error in acquire: " + error + ' ' + error.stack;
+
+                self._log('error',errMsg);
+
+                reject(new Error(errMsg));
 
             } else {
 
@@ -383,8 +398,12 @@ StatefulProcessCommandProxy.prototype.executeCommands = function(commands) {
                         });
 
                 } catch (e) {
-                    self._log('error',"executeCommands: error: " + e);
+                    var errMsg = "executeCommands: error: " + e;
+
+                    self._log('error',errMsg);
                     self._pool.release(processProxy);
+
+                    reject(new Error(errMsg));
                 }
 
             }
