@@ -690,7 +690,7 @@ ProcessProxy.prototype._initAutoInvalidation = function() {
         var self = this;
 
         // the below will run on an interval
-        setInterval(function() {
+        this._autoInvalidationInterval = setInterval(function() {
 
             // #1 build list of commands
             var commandsToExec = [];
@@ -796,14 +796,14 @@ ProcessProxy.prototype.executeCommand = function(command) {
 
         self.executeCommands([command])
 
-        .then(function(cmdResults) {
+            .then(function(cmdResults) {
 
-            fulfill(cmdResults[0]);
+                fulfill(cmdResults[0]);
 
 
-        }).catch(function(error) {
-            reject(error);
-        });
+            }).catch(function(error) {
+                reject(error);
+            });
 
     });
 
@@ -907,7 +907,7 @@ ProcessProxy.prototype.executeCommands = function(commands) {
                 // write the command, followed by this echo
                 // marker so we know that the command is done
                 self._process.stdin.write(command + '\n' +
-                'echo ' + MARKER_DONE + '\n');
+                    'echo ' + MARKER_DONE + '\n');
 
 
             }
@@ -919,6 +919,28 @@ ProcessProxy.prototype.executeCommands = function(commands) {
     });
 
 };
+
+/**
+* Called by shutdown to do the actual destruction of
+* this object
+*
+*/
+ProcessProxy.prototype._destroySelf = function() {
+    try {
+        if (this._autoInvalidationConfig) {
+            clearInterval(this._autoInvalidationInterval);
+        }
+    } catch(error) {
+        this._log('error','shutdown - error cleaning _autoInvalidationInterval..' + error);
+    }
+
+    try { this._process.stdin.end(); } catch(error){
+        this._log('error','shutdown - error _process.stdin.end()..' + error);
+    }
+    try { this._process.kill(); } catch(error){
+        this._log('error','shutdown - error _process.kill()..' + error);
+    }
+}
 
 /**
 * shutdown() - shuts down the ProcessProxy w/ optional shutdown commands
@@ -945,34 +967,30 @@ ProcessProxy.prototype.shutdown = function(shutdownCommands) {
 
                 self._executeCommands(shutdownCommands,false) // skip black/whitelists
 
-                .then(function(cmdResults) {
+                    .then(function(cmdResults) {
 
-                    self._process.stdin.end();
-                    self._process.kill();
+                        self._destroySelf();
+                        fulfill(cmdResults); // invoke when done!
 
-                    fulfill(cmdResults); // invoke when done!
+                    }).catch(function(exception) {
+                        self._log('error',"shutdown - shutdownCommands, " +
+                            " exception thrown: " + exception);
 
-                }).catch(function(exception) {
-                    self._log('error',"shutdown - shutdownCommands, " +
-                    " exception thrown: " + exception);
-                    self._process.stdin.end();
-                    self._process.kill();
-                    reject(exception);
-                });
+                        self._destroySelf();
+                        reject(exception);
+                    });
 
 
-                // we are done, no init commands to run...
+                // we are done, no shutdown commands to run...
             } else {
-                self._process.stdin.end();
-                self._process.kill();
+                self._destroySelf();
                 fulfill(null);
             }
 
 
         } catch (exception) {
             self._log('error',"shutdown, exception thrown: " + exception);
-            self._process.stdin.end();
-            self._process.kill();
+            self._destroySelf();
             reject(exception);
         }
     });
