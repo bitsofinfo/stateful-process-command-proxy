@@ -181,25 +181,26 @@ function StatefulProcessCommandProxy(config) {
             try {
                 processProxy.shutdown(config.preDestroyCommands)
 
-                .then(function(cmdResults) {
+                    .then(function(cmdResults) {
 
-                    // remove from our tracking...
-                    delete self._pid2processMap[processProxy.getPid()];
-
-                    if (cmdResults) {
-                        for (var i=0; i<cmdResults.length; i++) {
-                            var cmdResult = cmdResults[i];
-                            self._log('info',"process preDestroyCmd[" +
-                            cmdResult.command + "] out:" + cmdResult.stdout +
-                                " err:" + cmdResult.stderr);
+                        if (cmdResults) {
+                            for (var i=0; i<cmdResults.length; i++) {
+                                var cmdResult = cmdResults[i];
+                                self._log('info',"process preDestroyCmd[" +
+                                cmdResult.command + "] out:" + cmdResult.stdout +
+                                    " err:" + cmdResult.stderr);
+                            }
                         }
-                    }
 
-                }).catch(function(error) {
-                    self._log('error',"process destroy, error " +
-                        "while shutting down ProcessProxy["+processProxy.getPid()+"]: " + error);
+                    }).catch(function(error) {
+                        self._log('error',"process destroy, error " +
+                            "while shutting down ProcessProxy["+processProxy.getPid()+"]: " + error);
 
-                });
+                    });
+
+
+                // remove from our tracking...
+                delete self._pid2processMap[processProxy.getPid()];
 
             } catch (e) {
                 self._log('error',"process destroy: preDestroyCommands[" +
