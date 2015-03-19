@@ -849,7 +849,7 @@ ProcessProxy.prototype.executeCommands = function(commands) {
   **/
   ProcessProxy.prototype._executeCommands = function(commands, enforceBlackWhitelists) {
 
-    self = this;
+    var self = this;
 
     return new Promise(function(fulfill, reject) {
 
