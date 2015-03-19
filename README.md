@@ -52,7 +52,7 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
-v1.0.0 - 2015-03-19
+v1.0-beta.8 - 2015-03-19
     - Address memory leaks
     
 v1.0-beta.7 - 2015-02-05
