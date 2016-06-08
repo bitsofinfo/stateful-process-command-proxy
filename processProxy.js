@@ -35,7 +35,7 @@ fifo.prototype.toArray = function () {
 * ProcessProxy constructor
 *
 * @param processToSpawn full path to the process/shell to be launched
-* @param arguments array of arguments for the process
+* @param args array of arguments for the process
 *
 * @param retainMaxCmdHistory optional, default 0; set to 0 to
 *                            retain no command history, otherwise 1-N
@@ -117,7 +117,7 @@ fifo.prototype.toArray = function () {
 *
 *
 */
-function ProcessProxy(processToSpawn, arguments,
+function ProcessProxy(processToSpawn, args,
                       retainMaxCmdHistory, invalidateOnRegex,
                       cwd, envMap, uid, gid, logFunction,
                       processCmdBlacklistRegex,
@@ -127,7 +127,7 @@ function ProcessProxy(processToSpawn, arguments,
     this._createdAt = new Date();
     this._processPid = null;
     this._processToSpawn = processToSpawn;
-    this._processArguments = arguments;
+    this._processArguments = args;
     this._logFunction = logFunction;
 
 
