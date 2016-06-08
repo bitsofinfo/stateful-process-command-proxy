@@ -394,6 +394,7 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
 
             for (var i=0; i<stderrRegExps.length; i++) {
                 var regexp = stderrRegExps[i];
+                regexp.lastIndex = 0; // http://blog.geekingfrog.com/reuse-javascript-regexp-global-flag-gotcha/
                 var result = regexp.exec(stderr);
 
                 if (result) {
@@ -410,6 +411,7 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
 
             for (var i=0; i<stdoutRegExps.length; i++) {
                 var regexp = stdoutRegExps[i];
+                regexp.lastIndex = 0; // http://blog.geekingfrog.com/reuse-javascript-regexp-global-flag-gotcha/
                 var result = regexp.exec(stdout);
 
                 if (result) {
@@ -441,6 +443,7 @@ ProcessProxy.prototype._commandIsBlacklisted = function(command) {
 
     for (var i=0; i<this._cmdBlacklistRegexes.length; i++) {
         var regexp = this._cmdBlacklistRegexes[i];
+        regexp.lastIndex = 0; // http://blog.geekingfrog.com/reuse-javascript-regexp-global-flag-gotcha/
         var result = regexp.exec(command);
 
         if (result) {
@@ -470,6 +473,7 @@ ProcessProxy.prototype._commandIsWhitelisted = function(command) {
 
     for (var i=0; i<this._cmdWhitelistRegexes.length; i++) {
       var regexp = this._cmdWhitelistRegexes[i];
+      regexp.lastIndex = 0; // http://blog.geekingfrog.com/reuse-javascript-regexp-global-flag-gotcha/
       var result = regexp.exec(command);
 
       if (result) {
@@ -764,6 +768,7 @@ ProcessProxy.prototype._evalRegexConfigs = function(regexConfs, dataToEval) {
         var regexConf = regexConfs[i];
 
         if (regexConf.hasOwnProperty('regExpObj')) {
+            regexConf.regExpObj.lastIndex = 0; // http://blog.geekingfrog.com/reuse-javascript-regexp-global-flag-gotcha/
             var matches = regexConf.regExpObj.exec(dataToEval);
 
             if (matches && regexConf.invalidOn == 'match' ||
