@@ -53,27 +53,30 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
+v1.0 - 2016-06-08
+    - Address #7 and #8 (regex w/ global flag reset, arguments in strict-mode)
+
 v1.0-beta.8 - 2015-03-19
     - Address memory leaks
-    
+
 v1.0-beta.7 - 2015-02-05
     - Blacklist logging fix
-    
+
 v1.0-beta.6 - 2015-01-30
     - bug fixes, for auto-invalidation cmds being auto-whitelisted
-    
+
 v1.0-beta.5 - 2015-01-28
     - whitelisting fix
 
 v1.0-beta.4 - 2015-01-28
     - New options for command whitelist regex matching
       Note new parameter order in ProcessProxy constructor!
-      
+
     - Support for regex flags for all regex based configs
-    
+
     - All regex pattern based configurations now must be objects
       in format {regex:'pattern' [,flags:'img etc']}
-      
+
 v1.0-beta.3 - 2015-01-26
     - New options for command blacklisting regex matching and interval
       based self auto-invalidation of ProcessProxy instances
@@ -117,7 +120,7 @@ To use StatefulProcessCommandProxy the constructor takes one parameter which is 
    processCmdBlacklistRegex: optional config array regex patterns who if match the
                              command requested to be executed will be rejected
                              with an error. Blacklists run before whitelists
-                             
+
                                      [ {regex:'regex1',flags:'ig'},
                                        {regex:'regex2',flags:'ig'}...]
 
