@@ -53,7 +53,7 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
-v1.0 - 2016-06-08
+v1.0.0 - 2016-06-08
     - Address #7 and #8 (regex w/ global flag reset, arguments in strict-mode)
 
 v1.0-beta.8 - 2015-03-19
