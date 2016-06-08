@@ -2,6 +2,7 @@
 Node.js module for executing os commands against a pool of stateful, long-lived child processes such as bash shells or powershell consoles
 
 [![NPM](https://nodei.co/npm/stateful-process-command-proxy.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/stateful-process-command-proxy/)
+[![NPM](https://nodei.co/npm-dl/stateful-process-command-proxy.png)](https://nodei.co/npm/stateful-process-command-proxy/)
 
 This node module can be used for proxying long-lived bash process, windows console etc. It works and has been tested on both linux, os-x and windows hosts running the latest version of node.
 
