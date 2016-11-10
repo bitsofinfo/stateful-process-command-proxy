@@ -8,6 +8,6 @@ before_script:
   - npm install .
 "scripts": {
   "test": "./node_modules/mocha/bin/mocha test/all.js"
-},
+}
 
 
