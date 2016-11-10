@@ -53,6 +53,9 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
+v1.0.1 - 2016-11-10
+    - Address #13 (force generic-pool 2.4.4)
+    
 v1.0.0 - 2016-06-08
     - Address #7 and #8 (regex w/ global flag reset, arguments in strict-mode)
 
