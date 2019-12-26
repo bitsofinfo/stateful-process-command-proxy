@@ -114,7 +114,9 @@ fifo.prototype.toArray = function () {
 *             ]
 *        }
 *
-*
+* @param windowsVerbatimArguments : optional boolean which, on win32 only, will prevent or allow parameter quoting (as defined in
+*                                   child_process.spawn() method)
+*                                   By default, this setting has value true (no escaping)
 *
 */
 function ProcessProxy(processToSpawn, args,
@@ -122,7 +124,8 @@ function ProcessProxy(processToSpawn, args,
                       cwd, envMap, uid, gid, logFunction,
                       processCmdBlacklistRegex,
                       processCmdWhitelistRegex,
-                      autoInvalidationConfig) {
+                      autoInvalidationConfig,
+                      windowsVerbatimArguments) {
 
     this._createdAt = new Date();
     this._processPid = null;
@@ -187,6 +190,7 @@ function ProcessProxy(processToSpawn, args,
     if (gid) {
         this._processOptions['gid'] = gid;
     }
+    this._processOptions['windowsVerbatimArguments'] = !(windowsVerbatimArguments === false);
 
     this._commandStack = new fifo();
 
