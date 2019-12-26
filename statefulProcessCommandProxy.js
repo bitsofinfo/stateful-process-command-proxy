@@ -111,6 +111,9 @@ var Promise = require('promise');
               },...
             ]
        }
+       windowsVerbatimArguments : optional boolean which, on win32 only, will prevent or allow parameter quoting (as defined in
+                                  child_process.spawn() method)
+                                  By default, this setting has value true (no escaping)
 
 *
 **/
@@ -145,7 +148,8 @@ function StatefulProcessCommandProxy(config) {
                                                 config.logFunction,
                                                 config.processCmdBlacklistRegex,
                                                 config.processCmdWhitelistRegex,
-                                                config.autoInvalidationConfig);
+                                                config.autoInvalidationConfig,
+                                                config.windowsVerbatimArguments);
 
 
                 // initialize
