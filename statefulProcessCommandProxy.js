@@ -3,6 +3,7 @@ module.exports = StatefulProcessCommandProxy;
 var poolModule = require('generic-pool');
 var ProcessProxy = require('./processProxy');
 var Promise = require('promise');
+const { observable } = require('mobx');
 
 /**
 * StatefulProcessCommandProxy is the gateway for executing commands
@@ -124,7 +125,7 @@ function StatefulProcessCommandProxy(config) {
     this._logFunction = config.logFunction;
 
     // map of all process PIDs -> ProcessProxies
-    this._pid2processMap = new Object();
+    this._pid2processMap =  observable(new Object());
 
     var self = this;
 
@@ -156,7 +157,7 @@ function StatefulProcessCommandProxy(config) {
                 processProxy.initialize(config.initCommands)
 
                 .then(function(cmdResults) {
-                    self._log('info',"new process ready, initialization commands completed.");
+                    self._log('info',"new process ready, initialization commands completed. ("+processProxy.getPid()+')');
                     self._pid2processMap[processProxy.getPid()] = processProxy; // register in our process map
                     callback(null, processProxy);
 
