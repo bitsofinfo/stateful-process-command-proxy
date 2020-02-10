@@ -1,15 +1,15 @@
 {
-    "name":"stateful-process-command-proxy",
-    "version":"1.0.1",
-    "description":"Module for executing commands in shells (bash or powershell etc) against a pool of stateful child processes such as bash or powershell via stdout and stderr streams",
-    "main":"statefulProcessCommandProxy.js",
-    "directories":{
-        "test":"test"
+    "name": "stateful-process-command-proxy",
+    "version": "1.0.1",
+    "description": "Module for executing commands in shells (bash or powershell etc) against a pool of stateful child processes such as bash or powershell via stdout and stderr streams",
+    "main": "statefulProcessCommandProxy.js",
+    "directories": {
+        "test": "test"
     },
-    "scripts":{
-        "test":"mocha test/all.js"
+    "scripts": {
+        "test": "mocha test/all.js"
     },
-    "keywords":[
+    "keywords": [
         "command",
         "process",
         "dos",
@@ -22,28 +22,29 @@
         "execute",
         "exec"
     ],
-    "dependencies":{
-        "buffer-builder":"latest",
-        "fifo":"latest",
-        "promise":"latest",
-        "generic-pool":"2.4.4"
+    "dependencies": {
+        "buffer-builder": "latest",
+        "fifo": "latest",
+        "generic-pool": "2.4.4",
+        "mobx": "^5.15.2",
+        "promise": "latest"
     },
-    "devDependencies":{
-        "mocha":"latest"
+    "devDependencies": {
+        "mocha": "latest"
     },
-    "contributors":[
+    "contributors": [
         {
-            "name":"bitsofinfo",
-            "url":"http://bitsofinfo.wordpress.com"
+            "name": "bitsofinfo",
+            "url": "http://bitsofinfo.wordpress.com"
         }
     ],
-    "license":"ISC",
-    "repository":{
-        "type":"git",
-        "url":"https://github.com/bitsofinfo/stateful-process-command-proxy.git"
+    "license": "ISC",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bitsofinfo/stateful-process-command-proxy.git"
     },
-    "bugs":{
-        "url":"https://github.com/bitsofinfo/stateful-process-command-proxy/issues"
+    "bugs": {
+        "url": "https://github.com/bitsofinfo/stateful-process-command-proxy/issues"
     },
-    "homepage":"https://github.com/bitsofinfo/stateful-process-command-proxy"
+    "homepage": "https://github.com/bitsofinfo/stateful-process-command-proxy"
 }

@@ -4,6 +4,7 @@ var fifo = require('fifo');
 var Command = require('./command');
 var spawn = require('child_process').spawn;
 var Promise = require('promise');
+const { observable, action } = require('mobx');
 
 var MARKER_DONE = '__done__';
 
@@ -114,7 +115,9 @@ fifo.prototype.toArray = function () {
 *             ]
 *        }
 *
-*
+* @param windowsVerbatimArguments : optional boolean which, on win32 only, will prevent or allow parameter quoting (as defined in
+*                                   child_process.spawn() method)
+*                                   By default, this setting has value true (no escaping)
 *
 */
 function ProcessProxy(processToSpawn, args,
@@ -122,7 +125,8 @@ function ProcessProxy(processToSpawn, args,
                       cwd, envMap, uid, gid, logFunction,
                       processCmdBlacklistRegex,
                       processCmdWhitelistRegex,
-                      autoInvalidationConfig) {
+                      autoInvalidationConfig,
+                      windowsVerbatimArguments) {
 
     this._createdAt = new Date();
     this._processPid = null;
@@ -131,7 +135,7 @@ function ProcessProxy(processToSpawn, args,
     this._logFunction = logFunction;
 
 
-    this._commandHistory = [];
+    this._commandHistory = observable([]);
     if(typeof(retainMaxCmdHistory)==='undefined') {
         this._retainMaxCmdHistory = 0;
 
@@ -187,6 +191,7 @@ function ProcessProxy(processToSpawn, args,
     if (gid) {
         this._processOptions['gid'] = gid;
     }
+    this._processOptions['windowsVerbatimArguments'] = !(windowsVerbatimArguments === false);
 
     this._commandStack = new fifo();
 
@@ -365,7 +370,8 @@ ProcessProxy.prototype.isValid = function() {
 *   internal method that analyzes a just finish()ed command and
 *   evaluates all process invalidation regexes against it
 **/
-ProcessProxy.prototype._handleCommandFinished = function(command) {
+
+ProcessProxy.prototype._handleCommandFinished = action(function(command) {
     if (command && command.isCompleted()) {
 
         // store command history...
@@ -423,7 +429,7 @@ ProcessProxy.prototype._handleCommandFinished = function(command) {
             }
         }
     }
-}
+})
 
 /**
 * _commandIsBlacklisted(command)
@@ -613,11 +619,14 @@ ProcessProxy.prototype.initialize = function(initCommands) {
 
             // register stdout stream handler
             self._process.stdout.on('data', function(data) {
+                console.log(`[${self._process.pid}] [out] ${data}`);
                 self.onData('stdout', data);
             });
 
             // register stderr stream handler
             self._process.stderr.on('data', function(data) {
+                console.log(`[${self._process.pid}] [err] ${data}`);
+                
                 self.onData('stderr', data);
             });
 

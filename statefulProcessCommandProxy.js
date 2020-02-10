@@ -3,6 +3,7 @@ module.exports = StatefulProcessCommandProxy;
 var poolModule = require('generic-pool');
 var ProcessProxy = require('./processProxy');
 var Promise = require('promise');
+const { observable, action } = require('mobx');
 
 /**
 * StatefulProcessCommandProxy is the gateway for executing commands
@@ -111,6 +112,9 @@ var Promise = require('promise');
               },...
             ]
        }
+       windowsVerbatimArguments : optional boolean which, on win32 only, will prevent or allow parameter quoting (as defined in
+                                  child_process.spawn() method)
+                                  By default, this setting has value true (no escaping)
 
 *
 **/
@@ -121,7 +125,7 @@ function StatefulProcessCommandProxy(config) {
     this._logFunction = config.logFunction;
 
     // map of all process PIDs -> ProcessProxies
-    this._pid2processMap = new Object();
+    this._pid2processMap =  observable(new Object());
 
     var self = this;
 
@@ -145,18 +149,19 @@ function StatefulProcessCommandProxy(config) {
                                                 config.logFunction,
                                                 config.processCmdBlacklistRegex,
                                                 config.processCmdWhitelistRegex,
-                                                config.autoInvalidationConfig);
+                                                config.autoInvalidationConfig,
+                                                config.windowsVerbatimArguments);
 
 
                 // initialize
                 processProxy.initialize(config.initCommands)
 
-                .then(function(cmdResults) {
-                    self._log('info',"new process ready, initialization commands completed.");
+                .then(action('initStatefulProcessCommandProxy',function(cmdResults) {
+                    self._log('info',"new process ready, initialization commands completed. ("+processProxy.getPid()+')');
                     self._pid2processMap[processProxy.getPid()] = processProxy; // register in our process map
                     callback(null, processProxy);
 
-                }).catch(function(exception) {
+                })).catch(function(exception) {
                     self._log('error',"new process initialize threw error: " + exception + ' ' + exception.stack);
                 });
 
@@ -176,7 +181,7 @@ function StatefulProcessCommandProxy(config) {
         },
 
 
-        destroy: function(processProxy) {
+        destroy: action('destroyPid2ProcessMap', function(processProxy) {
 
             try {
                 processProxy.shutdown(config.preDestroyCommands)
@@ -207,7 +212,7 @@ function StatefulProcessCommandProxy(config) {
                     config.preDestroyCommands + "] exception: " + e);
             }
 
-        },
+        }),
 
         // maximum number in the pool
         max: config.max,
