@@ -55,6 +55,9 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
+v1.0.2 - 2024-09-16
+    - Address #21 Fix slice cropping data output
+
 v1.0.1 - 2016-11-10
     - Address #13 (force generic-pool 2.4.4)
     
