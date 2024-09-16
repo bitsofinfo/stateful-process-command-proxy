@@ -549,7 +549,7 @@ ProcessProxy.prototype.onData = function(type, data) {
                 } else {
 
                     // extract all data up-to the DONE marker...
-                    var block = data.slice(startIdx, doneIdx - 1);
+                    var block = data.slice(startIdx, doneIdx);
 
                     // apply the data and finish the command
                     if (cmd) {
