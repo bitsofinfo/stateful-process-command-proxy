@@ -696,6 +696,12 @@ ProcessProxy.prototype._initAutoInvalidation = function() {
         // the below will run on an interval
         this._autoInvalidationInterval = setInterval(function() {
 
+            // skip if the process is currently executing a command
+            if (self._commandStack.length > 0) {
+                self._log('info', 'Skipping auto-invalidation: process is busy');
+                return;
+            }
+
             // #1 build list of commands
             var commandsToExec = [];
             for(var i=0; i<self._autoInvalidationConfig.commands.length; i++) {
@@ -739,7 +745,7 @@ ProcessProxy.prototype._initAutoInvalidation = function() {
                 // handle any general execution error...
                 }).catch(function(exception) {
                     self._log('error','Error in auto-invalidation interval run: '+
-                        exception + ' ' + excetion.stack);
+                        exception + ' ' + exception.stack);
                 });
 
         },this._autoInvalidationConfig.checkIntervalMS);
