@@ -55,6 +55,10 @@ mocha test/all.js
 ### <a id="history"></a> History
 
 ```
+v1.0.3 - 2026-05-15 
+    - Address #22 fix auto-invalidation when busy
+    - Address #23 bump minmatch version 
+
 v1.0.2 - 2024-09-16
     - Address #21 Fix slice cropping data output
 
